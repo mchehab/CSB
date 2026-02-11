@@ -30,7 +30,7 @@ info() {
 }
 
 ### Configure the env
-${SCRIPT_DIR}/prepare.sh
+${SCRIPT_DIR}/scripts/prepare.sh
 . ./venv/bin/activate
 
 ### change dir to bm-runner

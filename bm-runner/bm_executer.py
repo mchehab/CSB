@@ -19,7 +19,8 @@ from utils.logger import bm_log, LogType
 
 class ExecutionUnit:
     START_FILE = "start"
-    CMD_WHILE_NOT_START = f"while [ ! -e {START_FILE} ]; do sleep 0.1; done;"
+    # Wait up to 20 seconds
+    CMD_WHILE_NOT_START = f"for i in $(seq 1 200); do if [ -e {START_FILE} ]; then break; fi; sleep 0.1; done;"
 
     def __init__(self, idx, home_dir, app: Application, type: ExecutionType):
         self.app = app
