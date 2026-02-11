@@ -47,9 +47,10 @@ jobs:
       LC_ALL: en_US.utf8
       LANG: en_US.utf8
     strategy:
+      fail-fast: false
       matrix:
         arch: [ aarch64 ]
-        test: [ 9]
+        test: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ]
     container:
       image: ghcr.io/${{ github.repository_owner }}/openeuler-csb:${{ matrix.arch }}
       options: --privileged --cap-add=SYS_ADMIN --security-opt seccomp=unconfined
@@ -69,5 +70,4 @@ jobs:
 
     steps:
       - name: Test ${{ matrix.test }}
-        continue-on-error: true
         run: cd /CSB && echo ${{ matrix.test }} | ./run.sh
