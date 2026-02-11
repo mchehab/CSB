@@ -54,14 +54,18 @@ jobs:
       image: ghcr.io/${{ github.repository_owner }}/openeuler-csb:${{ matrix.arch }}
       options: --privileged --cap-add=SYS_ADMIN --security-opt seccomp=unconfined
       volumes:
-        # Some scripts require /sys, /proc; cgroup is also needed by docker
-        - /sys:/sys
-        - /proc:/proc
+        # Some scripts require /sys, /proc, but sharing it is problematic
+        # - /sys:/sys
+        # - /proc:/proc
+
+        # Allow seeing kernel configuration
         - /boot:/boot
         - /lib/modules:/lib/modules
 
         # Allow using bare metal docker to create a sub-container
         - /var/run/docker.sock:/var/run/docker.sock
+        # Allow accessing cgroups
+        - /sys/fs/cgroup:/sys/fs/cgroup:ro
 
     steps:
       - name: Test ${{ matrix.test }}
