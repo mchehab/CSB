@@ -18,8 +18,10 @@ from utils.logger import bm_log, LogType
 
 
 class ExecutionUnit:
-    START_FILE = "start"
-    CMD_WHILE_NOT_START = f"while [ ! -e {START_FILE} ]; do sleep 0.1; done;"
+    START_FILE = os.path.expanduser("start")
+    # Wait until RETRY_COUNT * 100ms
+    RETRY_COUNT = 1000
+    CMD_WHILE_NOT_START = f"for i in $(seq 1 {RETRY_COUNT}); do if [ -e {START_FILE} ]; then break; fi; sleep 0.1; done;"
 
     def __init__(self, idx, home_dir, app: Application, type: ExecutionType):
         self.app = app
