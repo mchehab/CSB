@@ -20,7 +20,7 @@ RUN dnf install -y cmake perf sysstat sudo gcc docker-engine hiredis-devel jq
 #
 # Currently undocumented dependencies
 #
-RUN dnf install -y hostname python3 python3-pip iproute lshw ethtool nvme-cli hdparm libcgroup-tools
+RUN dnf install -y hostname python3 python3-pip iproute lshw ethtool nvme-cli hdparm libcgroup-tools stress-ng fio
 
 #
 # Install sudo disabling PAM authentication
