@@ -9,8 +9,8 @@ FROM ${BASE_IMAGE}
 
 #
 # To create and run it direcly, use:
-#    docker build -t openeuler-csb:latest -f docker/openeuler/Dockerfile .
-#    sudo docker run --rm --cap-add=SYS_ADMIN --privileged -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" -v "/var/run/docker.sock:/var/run/docker.sock" -it openeuler-csb:latest
+#    docker build -t openeuler-csb:latest -f .github/workflows/openeuler/Dockerfile .
+#    docker run -v /var/run/docker.sock:/var/run/docker.sock -it openeuler-csb:latest bash
 #
 # Note, however, that csb is currently not ready to run like that
 #
