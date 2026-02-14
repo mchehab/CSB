@@ -16,9 +16,10 @@ from bm_utils import is_port_free_to_use
 from monitors.monitor_factory import MonitorFactory
 from utils.logger import bm_log, LogType
 
+START_FILE = os.path.expanduser("~/start")
+
 
 class ExecutionUnit:
-    START_FILE = "start"
     # Wait up to 20 seconds
     CMD_WHILE_NOT_START = f"for i in $(seq 1 200); do if [ -e {START_FILE} ]; then break; fi; sleep 0.1; done;"
 
@@ -56,13 +57,11 @@ class ExecutionUnit:
 
 class Executer:
     SLEEP_IN_SEC = 5
-    START_FILE = "start"
 
     def __init__(self, home_dir, results_dir):
         assert bm_config.g_config
         self.home_dir = home_dir
         self.results_dir = results_dir
-        self.start_file_full_name = os.path.join(self.home_dir, self.START_FILE)
         self.exec_units = []
         self.plugins = bm_config.g_config.get_plugins()
         self.nics = bm_config.g_config.get_nics()
@@ -93,7 +92,9 @@ class Executer:
         for monitor in self.monitors:
             monitor.stop()
 
-    def exec_all(self, threads, duration, noise, initial_size, port_start: Optional[int]):
+    def exec_all(
+        self, threads, duration, noise, initial_size, port_start: Optional[int]
+    ):
         try:
             for idx, eu in enumerate(self.exec_units):
                 if port_start is not None:
@@ -128,7 +129,9 @@ class Executer:
             self.cleanup()
 
     def collect_results(self) -> str:
-        stat_prefix = "".join([monitor.collect_results().strip() for monitor in self.monitors])
+        stat_prefix = "".join(
+            [monitor.collect_results().strip() for monitor in self.monitors]
+        )
         result = "".join(f"{stat_prefix}{eu.get_output()}" for eu in self.exec_units)
         return result
 
@@ -138,7 +141,7 @@ class Executer:
         self.__call_plugins(ExecutionTime.PRE)
         self.__start_monitors()
         shell_out(
-            f"touch {self.START_FILE}",
+            f"touch {START_FILE}",
             current_dir=self.home_dir,
             output_is_log=False,
         )
@@ -148,8 +151,8 @@ class Executer:
         bm_log("cleaning up, stopping all processes/containers")
         for eu in self.exec_units:
             eu.stop()
-        if os.path.exists(self.start_file_full_name):
-            os.remove(self.start_file_full_name)
+        if os.path.exists(START_FILE):
+            os.remove(START_FILE)
         self.__stop_monitors()
         self.__call_plugins(ExecutionTime.CLEANUP)
         self.__stop_plugins()

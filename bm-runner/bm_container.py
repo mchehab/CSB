@@ -4,6 +4,7 @@
 ### Reference: https://docker-py.readthedocs.io/en/stable/containers.html
 import docker
 import docker.errors
+import os
 import time
 import sys
 from benchkit.shell.shell import shell_out
@@ -17,10 +18,11 @@ from config.application import Application
 from config.benchmark import ExecutionType
 from utils.logger import bm_log, LogType
 
+START_FILE = os.path.expanduser("~/start")
+
 
 class Container(ExecutionUnit):
     # containers will share the same /home
-    START_FILE = "/home/start"
 
     def __init__(
         self,
@@ -33,7 +35,9 @@ class Container(ExecutionUnit):
         port: Optional[int] = None,
         nic: Optional[ContainerNicConfig] = None,
     ):
-        super().__init__(idx=idx, type=ExecutionType.CONTAINER, home_dir=home_dir, app=app)
+        super().__init__(
+            idx=idx, type=ExecutionType.CONTAINER, home_dir=home_dir, app=app
+        )
         self.client = docker.from_env()  # Initialize Docker client
         self.image = image
         self.core_set = core_set
@@ -162,11 +166,15 @@ class Containers(Executer):
         nics: Optional[NicsConfig] = None,
     ):
         super().__init__(home_dir, results_dir=record_data_dir)
-        assert len(apps) == count, "[BUG] Application list length must be equal to count"
+        assert (
+            len(apps) == count
+        ), "[BUG] Application list length must be equal to count"
         bm_log(f"Initializing {count} containers with config: {config}")
         core_offsets = config.get_core_affinity_offset_list()
         for i in range(count):
-            core_set = bm_utils.get_cpu_set(start=core_offsets[i], core_cnt=config.core_count)
+            core_set = bm_utils.get_cpu_set(
+                start=core_offsets[i], core_cnt=config.core_count
+            )
             container = Container(
                 idx=i,
                 home_dir=home_dir,
