@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [ amd64, aarch64 ]
+        arch: [ aarch64 ]
     outputs:
       image-ref: ${{ steps.build.outputs.image }}
 
