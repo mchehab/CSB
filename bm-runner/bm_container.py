@@ -4,6 +4,7 @@
 ### Reference: https://docker-py.readthedocs.io/en/stable/containers.html
 import docker
 import docker.errors
+import time
 import sys
 from benchkit.shell.shell import shell_out
 from bm_executer import Executer
@@ -54,8 +55,17 @@ class Container(ExecutionUnit):
             sys.exit(1)
 
     def stop(self):
+        bm_log(f"Stopping Container {self.name}")
         try:
             container = self.client.containers.get(self.name)
+            exit_code = container.attrs["State"].get("ExitCode")
+            logs = container.logs().decode(errors="replace")
+            bm_log(
+                f"Container {self.name}\n"
+                f"  Status      : {container.status}\n"
+                f"  Exit code   : {exit_code}\n"
+                f"  Logs:\n{logs}"
+            )
             container.stop()
             container.remove()
             # Remove network namespace as well
@@ -82,6 +92,7 @@ class Container(ExecutionUnit):
 
     def __start(self, commands):
         self.stop()
+        bm_log(f"Starting Container: {self.name}")
         try:
             ports = {f"{self.port}/tcp": ("0.0.0.0", self.port)} if self.port else None
             container = self.client.containers.run(
@@ -101,6 +112,29 @@ class Container(ExecutionUnit):
                 working_dir="/home",
                 ports=ports,
             )
+
+            timeout_sec = 200
+            for _ in range(0, timeout_sec):
+                container.reload()
+                if container.status in ("running", "exited", "dead"):
+                    break
+
+                time.sleep(0.1)
+            else:
+                bm_log(
+                    f"Container {self.name} did not reach 'running' staus. Current status: {container.status}"
+                )
+                return None
+
+            exit_code = container.attrs["State"].get("ExitCode")
+            logs = container.logs().decode(errors="replace")
+            bm_log(
+                f"Container {self.name}\n"
+                f"  Status      : {container.status}\n"
+                f"  Exit code   : {exit_code}\n"
+                f"  Logs:\n{logs}"
+            )
+
             bm_utils.save_container_config(self.record_data_dir, self.name)
 
             if self.nic:

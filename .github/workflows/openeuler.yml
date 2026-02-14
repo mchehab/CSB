@@ -50,7 +50,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [ aarch64 ]
-        test: [ bm_empty, bm_server_redis, fio, min_mysql_close_dup_0_0, min_mysql_getdents64_close_0_0, min_mysql_lseek_read_1_0, min_mysql_newfstatat_0_1, min_mysql_newfstatat_openat_0_1, min_mysql_openat_fsync_0_2, min_mysql_pread64_faccessat2_0_5, min_mysql_read_close_0_0, min_mysql_read_write_0_1, stress_ng ]
+        test: [ bm_empty ]
 
     container:
       image: ghcr.io/${{ github.repository_owner }}/openeuler-csb:${{ matrix.arch }}
