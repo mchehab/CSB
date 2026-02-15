@@ -142,6 +142,10 @@ class ScalabilityBenchmark(Benchmark):
     ) -> RecordResult | List[RecordResult]:
         output = command_output.strip()
         lines = output.splitlines()
+
+        from pprint import pformat
+        bm_log(f"OUTPUT: {pformat(lines)}")
+
         dicts = []
         # transform the output from each line into a dictionary
         for output in lines:

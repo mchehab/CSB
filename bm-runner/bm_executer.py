@@ -22,6 +22,7 @@ START_FILE = os.path.expanduser("~/start")
 class ExecutionUnit:
     # Wait up to 20 seconds
     CMD_WHILE_NOT_START = f"for i in $(seq 1 200); do if [ -e {START_FILE} ]; then break; fi; sleep 0.1; done;"
+    CMD_WHILE_NOT_START = f"tree .; sleep 5;"
 
     def __init__(self, idx, home_dir, app: Application, type: ExecutionType):
         self.app = app
