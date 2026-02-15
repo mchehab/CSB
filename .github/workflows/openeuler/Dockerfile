@@ -55,6 +55,7 @@ RUN dnf install -y git
 RUN dnf clean all
 
 # Create a working directory and update submodules
+WORKDIR /CSB
 COPY . .
 
 #
@@ -62,4 +63,4 @@ COPY . .
 #
 RUN ./scripts/prepare.sh
 
-CMD ["./run.sh"]
+CMD ["/CSB/run.sh"]
