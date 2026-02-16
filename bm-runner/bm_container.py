@@ -4,6 +4,7 @@
 ### Reference: https://docker-py.readthedocs.io/en/stable/containers.html
 import docker
 import docker.errors
+import os
 import sys
 from benchkit.shell.shell import shell_out
 from bm_executer import Executer
@@ -80,8 +81,29 @@ class Container(ExecutionUnit):
             f"sudo ../scripts/add-nic-to-container.sh {netcfg.nic} {smp_irq_affinity} {pid} {self.name} {netcfg.ip} {netcfg.netmask}"
         )
 
+    def _volume_from(self):
+        if not os.path.exists("/.dockerenv"):
+            return self.home_dir
+
+        try:
+            container_id = os.uname().nodename
+            container = self.client.containers.get(container_id)
+
+        except Exception as e:
+            raise RuntimeError(f"Unable to determine CSB container: {e}")
+
+        for mount in container.attrs.get("Mounts", []):
+            if mount.get("Destination") == "/home":
+                volume_from = mount.get("Source")
+                if volume_from:
+                    bm_log(f"CSB container maps home volume from: {volume_from}")
+                    return volume_from
+
+        raise RuntimeError("CSB container doesn't have a home volume")
+
     def __start(self, commands):
         self.stop()
+        volume_from = self._volume_from()
         try:
             ports = {f"{self.port}/tcp": ("0.0.0.0", self.port)} if self.port else None
             container = self.client.containers.run(
@@ -90,7 +112,7 @@ class Container(ExecutionUnit):
                 name=self.name,
                 cpuset_cpus=self.core_set,
                 volumes={
-                    f"{self.home_dir}": {"bind": "/home", "mode": "rw"},
+                    volume_from: {"bind": self._home_dir(), "mode": "rw"},
                     "/usr": {"bind": "/usr", "mode": "rw"},
                     "/mnt": {"bind": "/mnt", "mode": "rw"},
                     "/lib/modules": {"bind": "/lib/modules", "mode": "rw"},
