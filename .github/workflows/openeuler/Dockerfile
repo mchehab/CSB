@@ -7,6 +7,8 @@ ARG TARGET=amd64
 
 FROM ${BASE_IMAGE}
 
+VOLUME [ "/home" ]
+
 #
 # To create and run it direcly, use:
 #    docker build -t openeuler-csb:latest -f .github/workflows/openeuler/Dockerfile .
@@ -14,10 +16,6 @@ FROM ${BASE_IMAGE}
 #
 # Note, however, that csb is currently not ready to run like that
 #
-
-
-# Needed volumes. The first two are used by get info scripts
-VOLUME [ "/boot", "/lib/modules", "/var/run/docker.sock" ]
 
 #
 # Needed due to pandas issues with timestamps
