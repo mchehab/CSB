@@ -16,8 +16,8 @@ FROM ${BASE_IMAGE}
 #
 
 
-# Needed volumes, except for cgroup
-VOLUME [ "/boot:/boot", "/lib/modules:/lib/modules", "/var/run/docker.sock:/var/run/docker.sock" ]
+# Needed volumes
+VOLUME ["/boot", "/lib/modules", "/var/run/docker.sock"]
 
 #
 # Needed due to pandas issues with timestamps

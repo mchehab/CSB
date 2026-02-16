@@ -55,21 +55,15 @@ jobs:
     container:
       image: ghcr.io/${{ github.repository_owner }}/openeuler-csb:${{ matrix.arch }}
       volumes:
-        # Some scripts require /sys, /proc, but sharing it is problematic
-        # - /sys:/sys
-        # - /proc:/proc
+        # share the repo itself
+        - ${{ github.workspace }}:/root/csb
 
-        # Allow seeing kernel configuration
+        # Share Linux kernel
         - /boot:/boot
         - /lib/modules:/lib/modules
 
-        # Share home too, as it is used to start docker on child containers
-        - /home:/home
-
-        # Allow using bare metal docker to create a sub-container
+        # Allow running sub-containers
         - /var/run/docker.sock:/var/run/docker.sock
-        # Allow accessing cgroups
-        - /sys/fs/cgroup:/sys/fs/cgroup:ro
 
     steps:
       - name: Test ${{ matrix.test }}
