@@ -7,7 +7,7 @@ env:
   TEST_TAG: openeuler-csb:aarch64
 
 jobs:
-  build-image:
+  openeuler:
     name: Build openeuler-csb image
     runs-on: ubuntu-latest
 
@@ -27,32 +27,28 @@ jobs:
           build-args: |
             BASE_IMAGE=openeuler/openeuler:24.03-lts-sp3
 
-  run-tests:
-    name: Build openeuler-csb image
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        test:
-          - min_mysql_close_dup_0_0
-          - min_mysql_getdents64_close_0_0
-          - min_mysql_lseek_read_1_0
-          - min_mysql_newfstatat_0_1
-          - min_mysql_newfstatat_openat_0_1
-          - min_mysql_openat_fsync_0_2
-          - min_mysql_pread64_faccessat2_0_5
-          - min_mysql_read_close_0_0
-          - min_mysql_read_write_0_1
+      - name: Build openeuler-csb image
+        strategy:
+          fail-fast: false
+          matrix:
+            test:
+              - min_mysql_close_dup_0_0
+              - min_mysql_getdents64_close_0_0
+              - min_mysql_lseek_read_1_0
+              - min_mysql_newfstatat_0_1
+              - min_mysql_newfstatat_openat_0_1
+              - min_mysql_openat_fsync_0_2
+              - min_mysql_pread64_faccessat2_0_5
+              - min_mysql_read_close_0_0
+              - min_mysql_read_write_0_1
 
-    steps:
-      - name: Test ${{ matrix.test }}
         run: |
-          docker run --rm --name csb \
-            -v /boot:/boot \
-            -v /lib/modules:/lib/modules \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -w /root/csb \
-            ${{ env.TEST_TAG }} \
-            bash -c "LANG=en_US.utf8 LC_ALL=en_US.utf8 \
-            scripts/fg-diff/run-single.sh config/${{ matrix.test }}.json"
+            docker run --rm --name csb \
+                -v /boot:/boot \
+                -v /lib/modules:/lib/modules \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -w /root/csb \
+                ${{ env.TEST_TAG }} \
+                bash -c "LANG=en_US.utf8 LC_ALL=en_US.utf8 \
+                scripts/fg-diff/run-single.sh config/${{ matrix.test }}.json"
 
