@@ -1,73 +1,64 @@
-# SPDX-License-Identifier: GPL-2.0
-name: CSB on openEuler
+# SPDX-License-Identifier: MIT
+name: CSB on openEuler (aarch64)
+
 on: [workflow_dispatch, push, pull_request]
 
-permissions:
-  contents: read
-  packages: write
+env:
+  TEST_TAG: openeuler-csb:aarch64
 
 jobs:
   #
-  # Build the image once, reuse it in all later jobs
-  #
+  # Build the image once
+  # 
   build-image:
-    name: openeuler-csb image
+    name: Build openeuler-csb image
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch: [ aarch64 ]
-    outputs:
-      image-ref: ${{ steps.build.outputs.image }}
 
     steps:
-      - name: Normalise repo name to lowercase
-        run: |
-          echo "LOWER_REPO=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
 
-      - uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v6
         id: build
         with:
           context: .
           file: .github/workflows/openeuler/Dockerfile
-          tags: ghcr.io/${{ env.LOWER_REPO }}/openeuler-csb:${{ matrix.arch }}
-          push: false
+          tags: ${{ env.TEST_TAG }}
           load: true
-          # openEuler Image to use: 24.03-SP3 LTS
-          build-args:
+          build-args: |
             BASE_IMAGE=openeuler/openeuler:24.03-lts-sp3
 
   #
-  # Run tests on openEuler via openeuler-csb image
+  # Run tests once for every architecture and every test case
   #
-  openEuler:
-    name: OpenEuler Tests
-    needs: build-image
+  tests:
     runs-on: ubuntu-latest
-    env:
-      LC_ALL: en_US.utf8
-      LANG: en_US.utf8
+    needs: build-image
+
     strategy:
       fail-fast: false
       matrix:
-        arch: [
-        aarch64 ]
-        test: [ min_mysql_close_dup_0_0, min_mysql_getdents64_close_0_0, min_mysql_lseek_read_1_0, min_mysql_newfstatat_0_1, min_mysql_newfstatat_openat_0_1, min_mysql_openat_fsync_0_2, min_mysql_pread64_faccessat2_0_5, min_mysql_read_close_0_0, min_mysql_read_write_0_1 ]
-
-    container:
-      image: ${{ needs.build-image.outputs.image-ref }}
-      volumes:
-        # Allow seeing kernel configuration
-        - /boot:/boot
-        - /lib/modules:/lib/modules
-        # Allow access to docker containers
-        - /var/run/docker.sock:/var/run/docker.sock
+        test:
+          - min_mysql_close_dup_0_0
+          - min_mysql_getdents64_close_0_0
+          - min_mysql_lseek_read_1_0
+          - min_mysql_newfstatat_0_1
+          - min_mysql_newfstatat_openat_0_1
+          - min_mysql_openat_fsync_0_2
+          - min_mysql_pread64_faccessat2_0_5
+          - min_mysql_read_close_0_0
+          - min_mysql_read_write_0_1
 
     steps:
       - name: Test ${{ matrix.test }}
         run: |
-          cd /root/csb
-          scripts/fg-diff/run-single.sh config/${{ matrix.test }}.json
+          docker run --rm --name csb \
+            -v /boot:/boot \
+            -v /lib/modules:/lib/modules \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -w /root/csb \
+            ${{ env.TEST_TAG }} \
+            bash -c "LANG=en_US.utf8 LC_ALL=en_US.utf8 \
+            scripts/fg-diff/run-single.sh config/${{ matrix.test }}.json"
+
