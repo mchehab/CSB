@@ -7,7 +7,27 @@ env:
   TEST_TAG: openeuler-csb:aarch64
 
 jobs:
-  openEuler:
+  build-image:
+    name: Build openeuler-csb image
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        name: build openEuler container
+        with:
+          context: .
+          file: .github/workflows/openeuler/Dockerfile
+          tags: ${{ env.TEST_TAG }}
+          load: true
+          build-args: |
+            BASE_IMAGE=openeuler/openeuler:24.03-lts-sp3
+
+  run-tests:
     name: Build openeuler-csb image
     runs-on: ubuntu-latest
     strategy:
@@ -25,20 +45,6 @@ jobs:
           - min_mysql_read_write_0_1
 
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/build-push-action@v6
-        name: build openEuler container
-        with:
-          context: .
-          file: .github/workflows/openeuler/Dockerfile
-          tags: ${{ env.TEST_TAG }}
-          load: true
-          build-args: |
-            BASE_IMAGE=openeuler/openeuler:24.03-lts-sp3
-
       - name: Test ${{ matrix.test }}
         run: |
           docker run --rm --name csb \
