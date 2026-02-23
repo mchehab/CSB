@@ -26,6 +26,7 @@ class Container(ExecutionUnit):
         self,
         idx,
         image,
+        is_build,
         home_dir,
         core_set,
         record_data_dir,
@@ -36,6 +37,7 @@ class Container(ExecutionUnit):
         super().__init__(idx=idx, type=ExecutionType.CONTAINER, home_dir=home_dir, app=app)
         self.client = docker.from_env()  # Initialize Docker client
         self.image = image
+        self.is_build = is_build
         self.core_set = core_set
         self.record_data_dir = record_data_dir
         self.port = port + self.idx if port else None
@@ -169,18 +171,24 @@ class Container(ExecutionUnit):
         )
         return None
 
-    def __start(self, commands):
+    def __start(self, commands, build=False):
         self.stop()
 
         host_home_dir = self._host_home_dir()
 
         volumes = {
             host_home_dir: {"bind": "/home", "mode": "rw"},
-            "/usr": {"bind": "/usr", "mode": "rw"},
-            "/mnt": {"bind": "/mnt", "mode": "rw"},
             "/lib/modules": {"bind": "/lib/modules", "mode": "rw"},
             "/etc": {"bind": "/etc", "mode": "rw"},
         }
+
+        if not self.is_build:
+            volumes.update(
+                {
+                    "/usr": {"bind": "/usr", "mode": "rw"},
+                    "/mnt": {"bind": "/mnt", "mode": "rw"},
+                }
+            )
 
         bm_log(f"Starting Container: {self.name}")
         try:
@@ -241,12 +249,19 @@ class Containers(Executer):
     ):
         super().__init__(home_dir, results_dir=record_data_dir)
         assert len(apps) == count, "[BUG] Application list length must be equal to count"
+
+        if config.build:
+            is_build = True
+        else:
+            is_build = False
+
         for i in range(count):
             core_set = config.get_cpus(i)
             container = Container(
                 idx=i,
                 home_dir=home_dir,
                 image=config.image,
+                is_build=is_build,
                 core_set=core_set,
                 record_data_dir=record_data_dir,
                 port=config.port,
