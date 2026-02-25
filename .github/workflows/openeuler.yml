@@ -87,11 +87,11 @@ jobs:
 
       - name: Fix artifact permissions
         if: always()
-        run: sudo chmod -R a+r /home/csb/results/
+        run: sudo chmod -R a+r /tmp/csb/results/
 
       - name: Upload results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: results-${{ matrix.benchmark }}
-          path: /home/csb/results/
+          name: results-${{ matrix.test }}
+          path: /tmp/csb/results/
