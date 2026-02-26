@@ -18,7 +18,7 @@ FROM ${BASE_IMAGE}
 #
 # Install required packages
 #
-RUN dnf install -y glibc-all-langpacks cmake perf sysstat sudo gcc moby-engine moby-client hiredis-devel jq hostname python3 python3-pip iproute lshw ethtool nvme-cli hdparm libcgroup-tools git
+#RUN dnf install -y glibc-all-langpacks cmake perf sysstat sudo gcc moby-engine moby-client hiredis-devel jq hostname python3 python3-pip iproute lshw ethtool nvme-cli hdparm libcgroup-tools git
 
 #
 # Docker-specific setup: install sudo disabling PAM authentication
@@ -33,7 +33,7 @@ RUN set -eux; \
 #
 # Reduce container disk space by dropping dnf data
 #
-RUN dnf clean all
+#RUN dnf clean all
 
 #
 # Create a home directory
@@ -54,6 +54,6 @@ VOLUME [ "/root/csb/build/bench" ]
 #
 # Prepare the environment: initialize git submodules and venv
 #
-RUN ./scripts/prepare.sh
+#RUN ./scripts/prepare.sh
 
 CMD ["/root/csb/run.sh"]
