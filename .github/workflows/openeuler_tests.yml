@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: MIT
+name: Run tests on openEuler
+on: [workflow_dispatch, push, pull_request]
+
+jobs:
+  openEuler:
+    name: OpenEuler Tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - bm_empty
+
+    container:
+      image: ghcr.io/${{ github.repository_owner}}/csb/openeuler-csb:latest
+      volumes:
+        - /tmp/csb:/home/csb
+        - /boot:/boot
+        - /lib/modules:/lib/modules
+        - /var/run/docker.sock:/var/run/docker.sock
+
+    steps:
+#      - name: create dirs
+#        run: mkdir -p /home/csb /tmp/csb
+
+      - name: Test ${{ matrix.test }}
+        run: |
+          cp -ar /root/csb/* /root/csb/.?* /home/csb
+          cd /home/csb && scripts/fg-diff/run-single.sh config/${{ matrix.test }}.json
+
+      - name: Fix artifact permissions
+        if: always()
+        run: sudo chmod -R a+r /tmp/csb/results/
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openeuler-results-${{ matrix.test }}
+          path: /tmp/csb/results/

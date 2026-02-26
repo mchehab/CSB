@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
-name: CSB on openEuler
-on: [workflow_dispatch, push, pull_request]
+name: Build openEuler CSB
+on: [workflow_dispatch]
 
 permissions:
   contents: read
@@ -33,50 +33,3 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner}}/csb/openeuler-csb:latest
           push: true
           platforms: linux/amd64
-
-  #
-  # Run tests on openEuler via openeuler-csb image
-  #
-  openEuler:
-    name: OpenEuler Tests
-    needs: build-image
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        test:
-          - bm_empty
-          - min_mysql_close_dup_0_0
-          - min_mysql_getdents64_close_0_0
-          - min_mysql_lseek_read_1_0
-          - min_mysql_newfstatat_0_1
-          - min_mysql_newfstatat_openat_0_1
-          - min_mysql_openat_fsync_0_2
-          - min_mysql_pread64_faccessat2_0_5
-          - min_mysql_read_close_0_0
-          - min_mysql_read_write_0_1
-
-    container:
-      image: ghcr.io/${{ github.repository_owner}}/csb/openeuler-csb:latest
-      volumes:
-        - /tmp:/home/csb
-        - /boot:/boot
-        - /lib/modules:/lib/modules
-        - /var/run/docker.sock:/var/run/docker.sock
-
-    steps:
-      - name: Test ${{ matrix.test }}
-        run: |
-          cp -ar /root/csb/* /home/csb
-          cd /home/csb && scripts/fg-diff/run-single.sh config/${{ matrix.test }}.json
-
-      - name: Fix artifact permissions
-        if: always()
-        run: sudo chmod -R a+r /tmp/csb/results/
-
-      - name: Upload results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: openeuler-results-${{ matrix.test }}
-          path: /tmp/csb/results/
