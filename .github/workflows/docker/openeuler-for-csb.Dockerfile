@@ -32,14 +32,11 @@ RUN set -eux; \
 # Create a temp dir with venv on it.
 #
 
-WORKDIR /src
+WORKDIR /home/csb
 COPY . .
 
 RUN ./scripts/prepare.sh
-RUN mv ./venv /venv
-RUN rm -rf /src .cache/pip/
-
-WORKDIR /home/csb
+RUN mv ./venv /venv && rm -rf /home/csb/*
 
 VOLUME /home/csb
 
