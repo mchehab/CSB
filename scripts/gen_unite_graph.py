@@ -33,12 +33,6 @@ from enum import Enum
 # --------------------------------------------------------------------
 # 1.  Configuration objects (unchanged from the previous script)
 # --------------------------------------------------------------------
-class PlotType(Enum):
-    NORMAL = 1
-    MIN_MAX_AVG = 2
-    SUCCESS_PERCENT = 3
-    HISTOGRAM = 4
-    LINEARITY = 5
 
 
 class PlotParams:
@@ -187,7 +181,7 @@ def plot_chart(
     out_path = os.path.join(out_dir, f"{out_prefix}.png")
     plt.savefig(out_path)
     plt.close()
-    print(f"Saved plot to: {out_path}")
+    print(f"Saved plot '{params.title}' to: {out_path}")
     return out_path
 
 
@@ -219,13 +213,11 @@ def read_config_plots(config_root: str) -> Dict[str, List[dict]]:
                 p for p in data.get("plots", []) if p.get("type") == "linearity"
             ]
 
-            for app in apps:
-                name = app.get("name")
-                if not name:
-                    continue
-                plots_by_app.setdefault(name, []).extend(linearity_plots)
+            app = os.path.basename(f).replace(".json", "")
 
-    return plots_by_app
+            plots_by_app[app] = linearity_plots
+
+    return  plots_by_app
 
 
 # --------------------------------------------------------------------
@@ -249,65 +241,95 @@ def main() -> None:
         help="Directory where PNGs and the index.html will be written.",
     )
     args = parser.parse_args()
-
     csv_dirs = [os.path.abspath(p) for p in args.csv_dirs]
     config_root = os.path.abspath(args.config_root)
     out_dir = os.path.abspath(args.output_dir)
     os.makedirs(out_dir, exist_ok=True)
 
-    # 4.1  Discover and load CSV files
+    # -----------------------------------------------------------------
+    # 4.1  Discover and load CSV files, grouped by the application (campaign)
+    # -----------------------------------------------------------------
     csv_files = discover_csv_files(csv_dirs)
     if not csv_files:
         print("No CSV files found. Exiting.")
         sys.exit(1)
 
-    combined_df, campaign_name = load_and_combine_csvs(csv_files)
-    if combined_df is None:
-        print("No valid data loaded. Exiting.")
+    # Group CSV files by the campaign name (used as a proxy for the application name)
+    files_by_app: Dict[str, List[str]] = {}
+    for f in csv_files:
+        _, campaign = extract_metadata(f)          # campaign == app identifier
+        if campaign == "Unknown":
+            print(f"Warning: Could not determine app for '{f}'; skipping.")
+            continue
+        files_by_app.setdefault(campaign, []).append(f)
+
+    # Load each app's CSV group into its own DataFrame
+    combined_by_app: Dict[str, pd.DataFrame] = {}
+    for app_name, file_list in files_by_app.items():
+        df, _ = load_and_combine_csvs(file_list)
+        if df is not None:
+            combined_by_app[app_name] = df
+            print(f"Combined for {app_name}")
+        else:
+            print(f"No data loaded for app '{app_name}'. Skipping.")
+
+    # If no app produced a DataFrame we can exit early
+    if not combined_by_app:
+        print("No valid data loaded for any app. Exiting.")
         sys.exit(1)
 
+    # -----------------------------------------------------------------
     # 4.2  Read plot definitions from JSON (per‑app mapping)
+    # -----------------------------------------------------------------
     plots_by_app = read_config_plots(config_root)
     if not plots_by_app:
         print(f"No linearity plots found under {config_root}. Exiting.")
         sys.exit(0)
 
-    # 4.3  Generate a separate plot for each execution_type
+    # -----------------------------------------------------------------
+    # 4.3  Generate a separate plot for each execution_type **per app**
+    # -----------------------------------------------------------------
     generated: List[Tuple[str, str]] = []          # (title, relative_path)
-    exec_types = combined_df["execution_type"].unique()
-    # Counter per (app, exec_type) pair to guarantee unique file names
-    counter: Dict[Tuple[str, str], int] = {}
+    counter: Dict[Tuple[str, str], int] = {}       # (app, exec_type) → counter
 
-    for app_name, plot_defs in plots_by_app.items():
+    for app_name, sub_df_global in combined_by_app.items():
+        plot_defs = plots_by_app[app_name]
+
+        print(f"Generating graph for {app_name}")
+        # Use only the execution types present for this app
+        exec_types = sub_df_global["execution_type"].unique()
+
         for exec_type in exec_types:
-            sub_df = combined_df[combined_df["execution_type"] == exec_type]
+            sub_df = sub_df_global[sub_df_global["execution_type"] == exec_type]
+            _, _, etype = exec_type.partition(".")   # strip possible prefix
+
             for plot_def in plot_defs:
-                # Required columns
+                # ---- validate required columns ---------------------------------
                 x = plot_def.get("x")
                 y = plot_def.get("y")
                 if any(col not in sub_df.columns for col in (x, y)):
-                    print(f"Skipping plot for execution_type '{exec_type}' "
-                          f"(missing column).")
+                    print(f"Skipping {app_name}: {etype} plot (missing column).")
                     continue
 
-                title = plot_def.get("title", f"{exec_type} – {y}")
+                # ---- build plot metadata ---------------------------------------
+                title = plot_def.get("title", f"{x} vs. {y}")
                 x_lbl = plot_def.get("x_lbl", x)
                 y_lbl = plot_def.get("y_lbl", y)
                 shape = plot_def.get("shape", "lineplot")
+                title = f"{app_name}: {etype}: {title}"
 
-                # We always compare kernel versions → hue = kernel_version
                 params = PlotParams(
                     x=x,
                     y=y,
                     hue="kernel_version",
-                    title=title,
                     x_lbl=x_lbl,
                     y_lbl=y_lbl,
+                    title=title,
                     hue_lbl="Kernel",          # optional legend label
                     shape=shape,
                 )
 
-                # ---- unique file name -------------------------------------------------
+                # ---- unique file name handling ---------------------------------
                 key = (app_name, exec_type)
                 counter[key] = counter.get(key, 0) + 1
                 suffix = f"{counter[key]:03d}"
@@ -320,11 +342,13 @@ def main() -> None:
                     rel_path = os.path.relpath(out_path, out_dir)
                     generated.append((title, rel_path))
 
+    # -----------------------------------------------------------------
+    # 4.4  Create a simple HTML gallery
+    # -----------------------------------------------------------------
     if not generated:
         print("No plots were created.")
         sys.exit(0)
 
-    # 4.4  Create a simple HTML gallery
     html_path = os.path.join(out_dir, "index.html")
     with open(html_path, "w", encoding="utf-8") as f:
         f.write("<!DOCTYPE html>\n<html lang='en'>\n<head>\n")
@@ -348,7 +372,6 @@ def main() -> None:
     print(f"\nAll plots written to: {out_dir}")
     print(f"Opening {html_path} in Firefox.")
     subprocess.run(["firefox", f"file://{html_path}"], check=False)
-
 
 if __name__ == "__main__":
     main()
