@@ -299,6 +299,7 @@ def main() -> None:
     # 4.3  Generate a separate plot for each execution_type **per app**
     # -----------------------------------------------------------------
     generated: List[Tuple[str, str]] = []          # (title, relative_path)
+    structured_plots: Dict[str, Dict[str, List[Tuple[str, str]]]] = {}
     counter: Dict[Tuple[str, str], int] = {}       # (app, exec_type) → counter
 
     for app_name, sub_df_global in combined_by_app.items():
@@ -350,12 +351,16 @@ def main() -> None:
                                       out_prefix, global_palette)
                 if out_path:
                     rel_path = os.path.relpath(out_path, out_dir)
-                    generated.append((title, rel_path))
+                    if app_name not in structured_plots:
+                        structured_plots[app_name] = {}
+                    if exec_type not in structured_plots[app_name]:
+                        structured_plots[app_name][exec_type] = []
+                    structured_plots[app_name][exec_type].append((title, rel_path))
 
     # -----------------------------------------------------------------
     # 4.4  Create a simple HTML gallery
     # -----------------------------------------------------------------
-    if not generated:
+    if not structured_plots:
         print("No plots were created.")
         sys.exit(0)
 
@@ -363,21 +368,65 @@ def main() -> None:
     with open(html_path, "w", encoding="utf-8") as f:
         f.write("<!DOCTYPE html>\n<html lang='en'>\n<head>\n")
         f.write("  <meta charset='utf-8'>\n")
-        f.write("  <title>Benchmark Plot Gallery</title>\n")
+        f.write("  <title>Benchmark Comparision</title>\n")
         f.write("  <style>\n")
         f.write("    body { font-family: Arial, sans-serif; margin: 20px; }\n")
         f.write("    .plot { margin-bottom: 40px; }\n")
         f.write("    .plot img { max-width: 100%; height: auto; }\n")
         f.write("    h2 { margin-top: 60px; }\n")
+        f.write("    body { font-family: sans-serif; margin: 20px; background: #f4f4f4; }\n")
+        f.write("    img { max-width: 920px; height: auto; display: block; margin: 10px auto; }\n")
+        f.write("    h3 { font-size: 14px; margin: 0; }\n")
         f.write("  </style>\n")
         f.write("</head>\n<body>\n")
-        f.write("  <h1>Benchmark Plot Gallery</h1>\n")
-        for title, rel_path in generated:
-            f.write("  <div class='plot'>\n")
-            f.write(f"    <h2>{title}</h2>\n")
-            f.write(f"    <img src='{rel_path}' alt='{title}'>\n")
-            f.write("  </div>\n")
-        f.write("</body>\n</html>")
+        f.write("  <h1>Benchmark Comparison</h1>\n")
+        f.write("  <table>\n")
+        f.write("    <tbody>\n")
+
+        for app_name, types_dict in structured_plots.items():
+            f.write(f"    <tr>\n")
+
+            # Define the column order we want to display
+            # We check if 'NATIVE' or 'CONTAINER' exists in the keys (case insensitive)
+            cols_to_check = ["NATIVE", "CONTAINER"]
+            others = []
+
+            # Group existing types into columns
+            found_cols = {}
+            for etype in types_dict.keys():
+                # Match if "NATIVE" is part of the execution_type string
+                matched = False
+                for target in cols_to_check:
+                    if target.upper() in etype.upper():
+                        found_cols[target] = types_dict[etype]
+                        matched = True
+                        break
+                if not matched:
+                    others.append(etype)
+
+            # 1. Render NATIVE column
+            f.write("      <td>")
+            for title, rel_path in found_cols.get("NATIVE", []):
+                f.write(f"<h3>{title}</h3><img src='{rel_path}'>")
+            f.write("</td>\n")
+
+            # 2. Render CONTAINER column
+            f.write("      <td>")
+            for title, rel_path in found_cols.get("CONTAINER", []):
+                f.write(f"<h3>{title}</h3><img src='{rel_path}'>")
+            f.write("</td>\n")
+
+            # 3. Render Others column
+            if others:
+                f.write("      <td>")
+                for o_type in others:
+                    for title, rel_path in types_dict[o_type]:
+                        f.write(f"<h3>[{o_type}] {title}</h3><img src='{rel_path}'>")
+                f.write("</td>\n")
+
+            f.write("    </tr>\n")
+
+        f.write("  </tbody>\n</table>\n")
 
     print(f"\nAll plots written to: {out_dir}")
     print(f"Opening {html_path} in Firefox.")
