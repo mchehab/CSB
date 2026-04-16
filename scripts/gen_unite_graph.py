@@ -138,6 +138,7 @@ def plot_chart(
     df: pd.DataFrame,
     out_dir: str,
     out_prefix: str,
+    palette: Dict[str, any],
 ) -> str:
     """
     Create a seaborn plot according to the supplied PlotParams and
@@ -164,6 +165,7 @@ def plot_chart(
         x=params.x,
         y=params.y,
         hue=params.hue,
+        palette=palette,
         marker="o",
     )
 
@@ -265,13 +267,20 @@ def main() -> None:
 
     # Load each app's CSV group into its own DataFrame
     combined_by_app: Dict[str, pd.DataFrame] = {}
+    all_known_kernels = set()
     for app_name, file_list in files_by_app.items():
         df, _ = load_and_combine_csvs(file_list)
         if df is not None:
             combined_by_app[app_name] = df
+            all_known_kernels.update(df["kernel_version"].unique())
             print(f"Combined for {app_name}")
         else:
             print(f"No data loaded for app '{app_name}'. Skipping.")
+
+    # Create a global palette to ensure consistent coloring across all plots
+    sorted_kernels = sorted(list(all_known_kernels))
+    palette_colors = sns.color_palette("tab10", len(sorted_kernels))
+    global_palette = dict(zip(sorted_kernels, palette_colors))
 
     # If no app produced a DataFrame we can exit early
     if not combined_by_app:
@@ -337,7 +346,8 @@ def main() -> None:
                     f"{sanitize_filename(app_name)}-"
                     f"{sanitize_filename(exec_type)}-{suffix}"
                 )
-                out_path = plot_chart(params, sub_df, out_dir, out_prefix)
+                out_path = plot_chart(params, sub_df, out_dir,
+                                      out_prefix, global_palette)
                 if out_path:
                     rel_path = os.path.relpath(out_path, out_dir)
                     generated.append((title, rel_path))
