@@ -184,6 +184,7 @@ def plot_chart(
         hue=params.hue,
         markers=params.hue,
         palette=palette,
+        legend=False,
     )
 
     ax.set_title(params.title)
