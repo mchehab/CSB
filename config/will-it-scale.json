@@ -32,23 +32,8 @@
     "value": "desc",
     "type": "str"
   },
-  "threads": {
-    "values": [
-      [
-        1
-      ]
-    ]
-  },
+  "threads": {},
   "containers": {
-    "container_list": {
-      "values": [
-        {
-          "min": 1,
-          "step": 1,
-          "max": 3
-        }
-      ]
-    },
     "core_count": 3
   },
   "applications": [
