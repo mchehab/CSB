@@ -1,0 +1,72 @@
+{
+  "plots": [
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.queries_performed.read",
+      "y_lbl": "Read Throughput",
+      "hue_lbl": "Executer",
+      "hue": "execution_unit",
+      "shape": "lineplot",
+      "type": "linearity",
+      "title": "Read vs. #container"
+    },
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.queries_performed.write",
+      "y_lbl": "Write Throughput",
+      "hue_lbl": "Executer",
+      "hue": "execution_unit",
+      "shape": "lineplot",
+      "type": "linearity",
+      "title": "Write vs. #container"
+    },
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "threads_fairness.events",
+      "y_lbl": "Events Throughput",
+      "hue_lbl": "Executer",
+      "hue": "execution_unit",
+      "shape": "lineplot",
+      "type": "linearity",
+      "title": "Events vs. #container"
+    }
+  ],
+  "benchmark_config": {
+    "duration": 3,
+    "threads": {
+      "values": [
+        [
+          1, 22, 44
+        ]
+      ]
+    },
+    "exec_env": ["native"]
+  },
+  "containers": {
+    "core_count": 1,
+    "container_list": {
+      "values": [
+        [
+          1
+        ],
+        {
+          "min": 22,
+          "step": 22,
+          "max": 44
+        }
+      ]
+    }
+  },
+  "applications": [
+    {
+      "name": "sysbench",
+      "args": "--mysql-host=127.0.0.1 --mysql-port=3306 --mysql-db=sbtest --mysql-user=sbtest --mysql-password='Password1!' --threads={threads} --tables=3 --table-size=10000 --time={duration} oltp_read_write run",
+      "adapter": {
+        "name": "sysbench-adapter.py"
+      }
+    }
+  ]
+}
