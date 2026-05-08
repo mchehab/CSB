@@ -6,7 +6,7 @@
       "y": "sql_statistics.queries_performed.read",
       "y_lbl": "Read Throughput",
       "hue_lbl": "Executer",
-      "hue": "execution_unit",
+      "hue": "execution_type",
       "shape": "lineplot",
       "type": "linearity",
       "title": "Read vs. #container"
@@ -17,7 +17,7 @@
       "y": "sql_statistics.queries_performed.write",
       "y_lbl": "Write Throughput",
       "hue_lbl": "Executer",
-      "hue": "execution_unit",
+      "hue": "execution_type",
       "shape": "lineplot",
       "type": "linearity",
       "title": "Write vs. #container"
@@ -28,7 +28,7 @@
       "y": "threads_fairness.events",
       "y_lbl": "Events Throughput",
       "hue_lbl": "Executer",
-      "hue": "execution_unit",
+      "hue": "execution_type",
       "shape": "lineplot",
       "type": "linearity",
       "title": "Events vs. #container"
@@ -39,11 +39,10 @@
     "threads": {
       "values": [
         [
-          1, 22, 44
+          1
         ]
       ]
-    },
-    "exec_env": ["native"]
+    }
   },
   "containers": {
     "core_count": 1,
@@ -53,9 +52,9 @@
           1
         ],
         {
-          "min": 22,
-          "step": 22,
-          "max": 44
+          "min": 8,
+          "step": 8,
+          "max": 32
         }
       ]
     }
