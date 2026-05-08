@@ -49,6 +49,18 @@
     }
   },
   "containers": {
+    "container_list": {
+      "values": [
+        [
+          1
+        ],
+        {
+          "min": 5,
+          "step": 5,
+          "max": 30
+        }
+      ]
+    },
     "core_count": 1
   },
   "applications": [
