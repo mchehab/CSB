@@ -130,30 +130,14 @@ fi
 # ==============================
 echo "Configuring MariaDB database and user permissions..."
 
-# Check if user exists
-USER_EXISTS=$(${MYSQL_CMD} -u root -e "SELECT User FROM mysql.user WHERE User='${DB_USER}';" 2>/dev/null | awk '{echo $1}' | grep -w "^${DB_USER}$" || true)
-
-if [[ -z "$USER_EXISTS" ]]; then
-    echo "Creating user '${DB_USER}'@'%' and granting privileges..."
-    ${MYSQL_CMD} -u root <<EOF
-CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
+${MYSQL_CMD} -u root <<EOF
+DROP DATABASE ${DB_NAME};
+DROP USER '${DB_USER}'@'%';
+CREATE DATABASE ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
 GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'%';
 FLUSH PRIVILEGES;
 EOF
-else
-    echo "User '${DB_USER}'@'%' already exists. Syncing password & privileges..."
-    ${MYSQL_CMD} -u root <<EOF
-ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
-FLUSH PRIVILEGES;
-EOF
-fi
-
-# Check if database exists
-DB_EXISTS=$(${MYSQL_CMD} -u root -e "SHOW DATABASES LIKE '${DB_NAME}';" 2>/dev/null | awk '{echo $1}' | grep -w "^${DB_NAME}$" || true)
-if [[ -z "$DB_EXISTS" ]]; then
-    echo "Creating database '${DB_NAME}'..."
-    ${MYSQL_CMD} -u root -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-fi
 
 # ================================
 # Run sysbench prepare and test it
