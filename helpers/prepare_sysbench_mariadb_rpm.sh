@@ -10,7 +10,7 @@ set -euo pipefail
 
 DB_NAME="sbtest"
 DB_USER="sbtest"
-DB_PASS="${DB_PASS:-Password1!}"
+DB_PASS="${DB_PASS:-Password@123}"
 IPv4=$(ip -4 -br addr|grep UP|head -1|perl -ne 'print "$1\n" if (m/(\d+\.\d+\.\d+\.\d+)/)')
 PORT=3306
 CONFIG_FILE="/etc/my.cnf.d/sysbench.cnf"
@@ -125,8 +125,8 @@ fi
 echo "Configuring MariaDB database and user permissions..."
 
 ${MYSQL_CMD} -u root <<EOF
-DROP DATABASE ${DB_NAME};
-DROP USER '${DB_USER}'@'%';
+DROP DATABASE IF EXISTS ${DB_NAME};
+DROP USER IF EXISTS '${DB_USER}'@'%';
 CREATE DATABASE ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
 GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'%';
@@ -137,11 +137,13 @@ EOF
 # Run sysbench prepare and test it
 # ================================
 echo "Preparing sysbench oltp_read_write..."
+set -x
 sysbench $LUA --mysql-host=${IPv4} --mysql-port=${PORT} \
          --mysql-db=${DB_NAME} --mysql-user=${DB_USER} \
          --mysql-password=${DB_PASS} \
          --threads=1 --tables=3 --table-size=10000 --time=1 \
          prepare || echo "Failed (maybe already prepared?)"
+set +x
 
 echo "Running oltp_read_write..."
 sysbench $LUA --mysql-host=${IPv4} --mysql-port=${PORT} \

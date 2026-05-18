@@ -10,6 +10,8 @@ mkdir -p ${SCRIPT_DIR}
 	cd ${SCRIPT_DIR}
 	if [ ! -e sysbench/.git ]; then
 		git clone https://github.com/akopytov/sysbench
+	else
+	    (cd sysbench && make clean)
 	fi
 	cd sysbench
 	./autogen.sh
