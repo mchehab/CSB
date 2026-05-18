@@ -50,6 +50,7 @@
   "applications": [
     {
       "name": "sysbench",
+      "path": "build/sysbench/bin/sysbench",
       "args": "--mysql-host={host_ip} --mysql-port=3306 --mysql-db=sbtest --mysql-user=sbtest --mysql-password='Password1!' --threads={threads} --tables=3 --table-size=10000 --time={duration} oltp_read_write run",
       "adapter": {
         "name": "sysbench-adapter.py"

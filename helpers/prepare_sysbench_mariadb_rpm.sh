@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Requires:
+# mariadb-devel
+
 # =============
 # Configuration
 # =============
@@ -13,7 +16,11 @@ PORT=3306
 CONFIG_FILE="/etc/my.cnf.d/sysbench.cnf"
 
 MYSQL_CMD="mariadb"
-LUA="/usr/share/sysbench/oltp_read_write.lua"
+
+SCRIPT_DIR="$(readlink -f $(dirname "$0")/..)"
+SYSBENCH_DIR="${SCRIPT_DIR}/bm-external/sysbench"
+LUA="${SYSBENCH_DIR}/share/sysbench/oltp_read_write.lua"
+PATH="${SYSBENCH_DIR}/bin:${PATH}"
 
 # =========================
 # Check for root privileges
@@ -21,19 +28,6 @@ LUA="/usr/share/sysbench/oltp_read_write.lua"
 if [[ $EUID -ne 0 ]]; then
     echo "This script must be run as root."
     exit 1
-fi
-
-# =====================================
-# Install MariaDB & sysbench if missing
-# =====================================
-if ! rpm -q mariadb-server &>/dev/null; then
-    echo "Installing MariaDB server..."
-    dnf install -y mariadb-server
-fi
-
-if ! command -v sysbench &>/dev/null; then
-    echo "Installing sysbench..."
-    dnf install -y sysbench
 fi
 
 # ========================================
