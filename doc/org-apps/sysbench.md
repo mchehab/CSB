@@ -12,5 +12,5 @@ sudo helpers/configure-sysbench.sh
 
 To run just one instance in bare metal host, run:
 ```bash
-sudo helpers/prepare_sysbench_mariadb_rpm.sh
+sudo helpers/prepare_sysbench.sh
 ```
