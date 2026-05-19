@@ -19,6 +19,8 @@ import configparser
 import re
 import stat
 
+from time import sleep
+
 # === Configuration Defaults ===
 DEFAULT_DB_NAME = "sbtest"
 DEFAULT_DB_USER = "sbtest"
@@ -35,6 +37,18 @@ DEFAULT_SYSBENCH_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     "..", "bm-external", "sysbench")
 DEFAULT_LUA_FILE = os.path.join(DEFAULT_SYSBENCH_DIR,
                                 "share", "sysbench", "oltp_read_write.lua")
+
+CA_EXT = """\
+[v3_ca]
+basicConstraints = critical,CA:TRUE
+subjectKeyIdentifier = hash
+"""
+SRV_EXT = """ \
+[v3_req]
+basicConstraints = critical,CA:FALSE
+extendedKeyUsage = serverAuth
+subjectAltName = IP:127.0.0.1,IP:0.0.0.0,DNS:mariadb-server
+"""
 
 class MariaDBSysbenchSetup:
     def __init__(self, args):
@@ -54,7 +68,15 @@ class MariaDBSysbenchSetup:
         self.ipv4 = args.host_ip or self._detect_ipv4()
         self.config_modified = False
         self.force_ssl = args.force_ssl
+        self.config = {}
         self._ensure_root()
+
+    def run(self, cmd, *args, **kwargs):
+        try:
+            return subprocess.run(cmd, *args, **kwargs)
+        except subprocess.CalledProcessError as e:
+            print(f"$ {' '.join(cmd)}")
+            raise
 
     def _ensure_root(self):
         if os.geteuid() != 0:
@@ -64,7 +86,8 @@ class MariaDBSysbenchSetup:
     def _detect_ipv4(self):
         """Detect IPv4 prioritizing physical NICs, excluding docker/bridge/localhost."""
         try:
-            res = subprocess.run(['ip', '-4', '-br', 'addr'], capture_output=True, text=True, check=True)
+            res = self.run(['ip', '-4', '-br', 'addr'],
+                           capture_output=True, text=True, check=True)
             primary_candidates = []
             fallback_candidates = []
 
@@ -91,7 +114,8 @@ class MariaDBSysbenchSetup:
                     continue
 
                 priority = 10
-                if iface.startswith(('eth', 'en', 'eno', 'ens', 'em', 'p', 'wl', 'enp')):
+                if iface.startswith(('eth', 'en', 'eno', 'ens',
+                                     'em', 'p', 'wl', 'enp')):
                     priority = 10
                 primary_candidates.append((iface, ip, priority))
 
@@ -113,6 +137,17 @@ class MariaDBSysbenchSetup:
             for f in os.listdir(config_dir):
                 if f.endswith('.cnf'):
                     files.append(os.path.join(config_dir, f))
+
+        for fname in files:
+            config = configparser.ConfigParser(interpolation=None, comment_prefixes=('#', ';', '!'))
+            config.read(conf_file)
+            self.config[fname] = {
+                "config": config,
+                "modified": False
+            }
+
+        print(self.config)
+
         return files
 
     def _set_config_var(self, key, value):
@@ -183,12 +218,29 @@ class MariaDBSysbenchSetup:
         os.makedirs(self.config_dir, exist_ok=True)
         open(target_file, 'a').write('\n')
         content = open(target_file, 'r').read()
-        if not re.search(r'\[mysqld\]', content):
-            content = f"[mysqld]\n{key} = {value}\n"
-        else:
+
+        # MariaDB 10.5+ strictly reads [mariadbd], fallback to [mysqld]
+        if '[mariadbd]' in content:
+            content = re.sub(r'(\[mariadbd\])', rf'\1\n{key} = {value}', content, count=1)
+        elif '[mysqld]' in content:
             content = re.sub(r'(\[mysqld\])', rf'\1\n{key} = {value}', content, count=1)
+        else:
+            content = f"[mariadbd]\n{key} = {value}\n"
         open(target_file, 'w').write(content)
         return True
+
+    def _is_ssl_configured(self):
+        """Check if valid SSL certs already exist and are referenced."""
+        ssl_dir = '/etc/mysql/ssl'
+        ssl_ca = os.path.join(ssl_dir, 'ca.pem')
+        for f in self._get_config_files():
+            if os.path.isfile(f) and os.path.isfile(ssl_ca):
+                content = open(f).read()
+                if 'ssl-ca' in content:
+                    with open(ssl_ca, 'r') as caf:
+                        if caf.read().strip().startswith('-----BEGIN CERTIFICATE-----'):
+                            return True
+        return False
 
     def _setup_ssl(self):
         """Check SSL status and generate certificates if disabled or forced."""
@@ -197,6 +249,7 @@ class MariaDBSysbenchSetup:
         ssl_ca = os.path.join(ssl_dir, 'ca.pem')
         ssl_cert = os.path.join(ssl_dir, 'server-cert.pem')
         ssl_key = os.path.join(ssl_dir, 'server-key.pem')
+        csr_path = os.path.join(ssl_dir, 'server.csr')
 
         if not self.force_ssl:
             for f in self._get_config_files():
@@ -204,7 +257,8 @@ class MariaDBSysbenchSetup:
                     content = open(f).read()
                     if 'ssl-ca' in content and os.path.isfile(ssl_ca):
                         # Verify it's actually a valid PEM
-                        if open(ssl_ca).read().startswith('-----BEGIN CERTIFICATE-----'):
+                        ca_content = open(ssl_ca).read()
+                        if ca_content.startswith('-----BEGIN CERTIFICATE-----') and ca_content.endswith('-----END CERTIFICATE-----'):
                             print("  SSL is already enabled and valid. Skip generation. Use --force-ssl to override.")
                             return
 
@@ -212,16 +266,26 @@ class MariaDBSysbenchSetup:
         os.makedirs(ssl_dir, exist_ok=True)
 
         # Generate CA Key & Cert
-        subprocess.run(['openssl', 'genrsa', '-out', ssl_ca_key, '2048'], check=True)
-        subprocess.run(['openssl', 'req', '-new', '-x509', '-days', '3650', '-key', ssl_ca_key, '-batch', '-out', ssl_ca, '-subj', '/CN=MariaDB CA'], check=True)
+        self.run(['openssl', 'req', '-newkey', 'rsa:2048', '-nodes',
+                  '-keyout', ssl_ca_key, '-x509', '-days', '3650',
+                  '-out', ssl_ca, '-subj', '/CN=MariaDB CA',
+                  '-extensions', 'v3_ca'],
+                  input=CA_EXT.encode('utf-8'), check=True)
 
-        # Generate Server Key & Cert (signed by CA)
-        subprocess.run(['openssl', 'genrsa', '-out', ssl_key, '2048'], check=True)
-        subprocess.run(['openssl', 'req', '-batch', '-new', '-key', ssl_key, '-out', os.path.join(ssl_dir, 'server.csr'), '-subj', '/CN=mariadb-server'], check=True)
-        subprocess.run(['openssl', 'x509', '-req', '-days', '3650', '-in', os.path.join(ssl_dir, 'server.csr'), '-CA', ssl_ca, '-CAkey', ssl_ca_key, '-set_serial', '01', '-out', ssl_cert], check=True)
+        # Generate Server Key & CSR
+        self.run(['openssl', 'req', '-newkey', 'rsa:2048', '-nodes',
+                  '-keyout', ssl_key, '-out', csr_path,
+                  '-subj', '/CN=mariadb-server'],
+                 check=True)
 
-        # Cleanup
-        csr_path = os.path.join(ssl_dir, 'server.csr')
+        # Sign Server Cert with CA
+        self.run(['openssl', 'x509', '-req', '-days', '3650', '-in',
+                  csr_path, '-CA', ssl_ca, '-CAkey', ssl_ca_key,
+                  '-set_serial', '01', '-out', ssl_cert,
+                  '-extensions', 'v3_req'],
+                 input=SRV_EXT.encode('utf-8'), check=True)
+
+        # Cleanup CSR
         if os.path.exists(csr_path):
             os.remove(csr_path)
 
@@ -234,22 +298,22 @@ class MariaDBSysbenchSetup:
         self._set_config_var('ssl-ca', ssl_ca)
         self._set_config_var('ssl-cert', ssl_cert)
         self._set_config_var('ssl-key', ssl_key)
-        self._set_config_var('tls_version', 'TLSv1.2,TLSv1.3')
         self._set_config_var('require_secure_transport', 'ON')
-
+        # MariaDB 10.5+ explicitly requires tls_version for TLS 1.2/1.3 negotiation
+        self._set_config_var('tls_version', 'TLSv1.2, TLSv1.3')
         print("  SSL configuration applied.")
 
     def _manage_service(self):
         """Start/enable MariaDB/MySQL and handle restarts if config changed."""
         print("Starting and enabling MariaDB/MySQL service...")
-        subprocess.run(['systemctl', 'enable', '--now', 'mariadb.service'], check=False)
+        self.run(['systemctl', 'enable', '--now', 'mariadb.service'], check=True)
 
         if self.config_modified:
             print("  Config modified, restarting service...")
-            subprocess.run(['systemctl', 'restart', 'mariadb.service'], check=False)
-            subprocess.run(['sleep', '3'], check=True)
+            self.run(['systemctl', 'restart', 'mariadb.service'], check=True)
+            sleep(5)
 
-        res = subprocess.run(['systemctl', 'is-active', '--quiet', 'mariadb.service'], capture_output=True)
+        res = self.run(['systemctl', 'is-active', '--quiet', 'mariadb.service'], capture_output=True)
         if res.returncode != 0:
             print("MariaDB/MySQL failed to start. Check journalctl -u mariadb.service for details.", file=sys.stderr)
             sys.exit(1)
@@ -265,7 +329,7 @@ class MariaDBSysbenchSetup:
             GRANT ALL PRIVILEGES ON {self.db_name}.* TO '{self.db_user}'@'%';
             FLUSH PRIVILEGES;
         """
-        subprocess.run([self.mysql_cmd, '-u', 'root'], input=sql, check=True, text=True)
+        self.run([self.mysql_cmd, '-u', 'root'], input=sql, check=True, text=True)
 
     def _run_sysbench(self):
         """Execute sysbench prepare and run phases."""
@@ -282,15 +346,15 @@ class MariaDBSysbenchSetup:
 
         print("Preparing sysbench oltp_read_write...")
         prepare_cmd = cmd_base + ['prepare']
-        res = subprocess.run(prepare_cmd, env=env, capture_output=True, text=True)
+        res = self.run(prepare_cmd, env=env, capture_output=True, text=True)
         if res.returncode != 0:
-            print("  (Note: sysbench prepare failed or was already prepared. Continuing. .)")
+            print("  (Note: sysbench prepare failed or was already prepared. Continuing... )")
 
         print("Running oltp_read_write...")
         run_cmd = cmd_base + ['run']
-        subprocess.run(run_cmd, env=env, check=True)
+        self.run(run_cmd, env=env, check=True)
 
-    def run(self):
+    def setup(self):
         """Orchestrate the full setup process."""
         self._manage_service()
         self._setup_ssl()
@@ -314,7 +378,7 @@ class MariaDBSysbenchSetup:
         print(f"User:      {self.db_user}")
         print(f"Password:  {self.db_pass}")
         print(f"Config:    {self.config_file}")
-        print("============================================")
+        print("==============================================")
 
 
 def main():
@@ -335,8 +399,8 @@ def main():
     parser.add_argument('--force-ssl', action='store_true', help='Force SSL certificate re-creation')
 
     args = parser.parse_args()
-    setup = MariaDBSysbenchSetup(args)
-    setup.run()
+    mysqlsetup = MariaDBSysbenchSetup(args)
+    mysqlsetup.setup()
 
 if __name__ == '__main__':
     main()
