@@ -135,7 +135,16 @@ class MariaDBSysbenchSetup:
                     break
 
             if not val_found:
-                 raise ValueError(f"Can't handle {config_file}")
+                # Fallback to raw line parsing for unsectioned keys
+                with open(conf_file, 'r') as f:
+                    content = f.read()
+
+                for line in content.splitlines():
+                    stripped = line.strip()
+                    if stripped and not stripped.startswith('#') and not stripped.startswith(';') and not stripped.startswith('[') and not stripped.startswith('!'):
+                        if re.match(rf'^{re.escape(key)}\s*=', stripped):
+                            found_keys.append((conf_file, re.sub(rf'^{re.escape(key)}\s*=\s*', '', stripped).strip().strip('"\'') ))
+                            break
 
         if not found_keys:
             should_update = True
@@ -183,42 +192,51 @@ class MariaDBSysbenchSetup:
 
     def _setup_ssl(self):
         """Check SSL status and generate certificates if disabled or forced."""
-        ssl_ca = '/etc/mysql/ssl/ca.pem'
-        ssl_cert = '/etc/mysql/ssl/server-cert.pem'
-        ssl_key = '/etc/mysql/ssl/server-key.pem'
+        ssl_dir = '/etc/mysql/ssl'
+        ssl_ca_key = os.path.join(ssl_dir, 'ca-key.pem')
+        ssl_ca = os.path.join(ssl_dir, 'ca.pem')
+        ssl_cert = os.path.join(ssl_dir, 'server-cert.pem')
+        ssl_key = os.path.join(ssl_dir, 'server-key.pem')
 
         if not self.force_ssl:
-            # Check if SSL is already configured
             for f in self._get_config_files():
                 if os.path.isfile(f):
                     content = open(f).read()
-                    if 'ssl-ca' in content or 'require_secure_transport' in content:
-                        print("  SSL is already enabled. Skip generation. Use --force-ssl to override.")
-                        return
+                    if 'ssl-ca' in content and os.path.isfile(ssl_ca):
+                        # Verify it's actually a valid PEM
+                        if open(ssl_ca).read().startswith('-----BEGIN CERTIFICATE-----'):
+                            print("  SSL is already enabled and valid. Skip generation. Use --force-ssl to override.")
+                            return
 
         print("  Enabling SSL and generating self-signed certificates...")
-        ssl_dir = os.path.dirname(ssl_ca)
         os.makedirs(ssl_dir, exist_ok=True)
 
-        # Generate CA (with -batch to avoid interactive prompts)
-        subprocess.run(['openssl', 'req', '-batch', '-new', '-x509', '-days', '3650', '-nodes', '-out', ssl_ca, '-keyout', ssl_ca, '-subj', '/CN=MariaDB CA'], check=True)
-        # Generate Server Cert
-        subprocess.run(['openssl', 'req', '-batch', '-new', '-nodes', '-out', ssl_cert + '.csr', '-keyout', ssl_key, '-subj', '/CN=mariadb-server'], check=True)
-        subprocess.run(['openssl', 'x509', '-req', '-in', ssl_cert + '.csr', '-CA', ssl_ca, '-CAkey', ssl_ca, '-CAcreateserial', '-out', ssl_cert, '-days', '3650'], check=True)
+        # Generate CA Key & Cert
+        subprocess.run(['openssl', 'genrsa', '-out', ssl_ca_key, '2048'], check=True)
+        subprocess.run(['openssl', 'req', '-new', '-x509', '-days', '3650', '-key', ssl_ca_key, '-batch', '-out', ssl_ca, '-subj', '/CN=MariaDB CA'], check=True)
 
-        # Cleanup CSR & serial
-        for p in [ssl_cert + '.csr', ssl_ca + '.srl']:
-            if os.path.exists(p):
-                os.remove(p)
+        # Generate Server Key & Cert (signed by CA)
+        subprocess.run(['openssl', 'genrsa', '-out', ssl_key, '2048'], check=True)
+        subprocess.run(['openssl', 'req', '-batch', '-new', '-key', ssl_key, '-out', os.path.join(ssl_dir, 'server.csr'), '-subj', '/CN=mariadb-server'], check=True)
+        subprocess.run(['openssl', 'x509', '-req', '-days', '3650', '-in', os.path.join(ssl_dir, 'server.csr'), '-CA', ssl_ca, '-CAkey', ssl_ca_key, '-set_serial', '01', '-out', ssl_cert], check=True)
 
+        # Cleanup
+        csr_path = os.path.join(ssl_dir, 'server.csr')
+        if os.path.exists(csr_path):
+            os.remove(csr_path)
+
+        # Permissions
         os.chmod(ssl_key, stat.S_IRUSR | stat.S_IWUSR)
+        os.chmod(ssl_ca_key, stat.S_IRUSR | stat.S_IWUSR)
         os.chmod(ssl_cert, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
         os.chmod(ssl_ca, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
 
         self._set_config_var('ssl-ca', ssl_ca)
         self._set_config_var('ssl-cert', ssl_cert)
         self._set_config_var('ssl-key', ssl_key)
+        self._set_config_var('tls_version', 'TLSv1.2,TLSv1.3')
         self._set_config_var('require_secure_transport', 'ON')
+
         print("  SSL configuration applied.")
 
     def _manage_service(self):
