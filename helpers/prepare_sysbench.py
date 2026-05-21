@@ -14,6 +14,7 @@ import subprocess
 import sys
 
 from time import sleep
+from shutil import which
 
 # === Configuration Defaults ===
 DEFAULT_DB_NAME = "sbtest"
@@ -35,6 +36,7 @@ DEFAULT_LUA_FILE = os.path.join(DEFAULT_SYSBENCH_DIR, "share", "sysbench", "oltp
 
 class MariaDBSysbenchSetup:
     """Sets up MariaDB and prepare sysbench OLTP tests"""
+
     def __init__(self, args):
         self.db_name = args.db_name
         self.db_user = args.db_user
@@ -47,6 +49,7 @@ class MariaDBSysbenchSetup:
         self.tables = args.tables
         self.table_size = args.table_size
         self.bench_time = args.time
+        self.service = args.service
         self.sysbench_dir = args.sysbench_dir or DEFAULT_SYSBENCH_DIR
         self.lua_file = args.lua_file or DEFAULT_LUA_FILE
         self.ipv4 = args.host_ip or self._detect_ipv4()
@@ -113,134 +116,105 @@ class MariaDBSysbenchSetup:
             )
             return "127.0.0.1"
 
-    def _get_config_files(self):
+    def _read_config_files(self):
         """Gather all MariaDB/MySQL configuration files to scan."""
         files = ["/etc/my.cnf"]
+
         config_dir = "/etc/my.cnf.d"
         if os.path.isdir(config_dir):
-            for f in os.listdir(config_dir):
+            for f in reversed(os.listdir(config_dir)):
                 if f.endswith(".cnf"):
                     files.append(os.path.join(config_dir, f))
 
+        if DEFAULT_CONFIG_FILE not in files:
+            files.append(DEFAULT_CONFIG_FILE)
+
         for fname in files:
-            config = configparser.ConfigParser(interpolation=None, comment_prefixes=("#", ";", "!"))
-            config.read(fname)
+            config = configparser.ConfigParser(
+                interpolation=None,
+                strict=False,
+                allow_no_value=True,
+                comment_prefixes=("#", ";", "!"),
+            )
+
+            if os.path.isfile(fname):
+                config.read(fname)
+
             self.config[fname] = {"config": config, "modified": False}
 
-        return files
-
-    def _set_config_var(self, key, value):
+    def _set_config_var(self, section, key, value):
         """Update or add a key=value pair in config files. Returns True if modified."""
-        files = self._get_config_files()
-        found_keys = []
+        old = None
+        for fname, data in self.config.items():
+            old = data["config"].get(section, key, fallback=None)
+            if old:
+                old = old.strip().strip("\"'")
+                break
 
-        for conf_file in files:
-            if not os.path.isfile(conf_file):
+        if not old:
+            fname = DEFAULT_CONFIG_FILE
+        else:
+            if old.isdigit() and value.isdigit():
+                if int(old) == int(value):
+                    return False
+                if int(value) and int(old) > int(value):
+                    return False
+            if old == value:
+                return False
+
+        if not old:
+            print(f"  {fname}: add at [{section}]: {key} = {value}")
+        else:
+            print(f"  {fname}: modify at [{section}]: {key} = {value}")
+
+        config = self.config[fname]["config"]
+        if section not in config:
+            config.add_section(section)
+
+        config.set(section, key, value)
+        self.config[fname]["modified"] = True
+
+    def _write_config_files(self):
+        """Flush changes to configuration files"""
+
+        changed = False
+
+        for fname, data in self.config.items():
+            if not data["modified"]:
                 continue
 
-            # Try configparser first
-            config = configparser.ConfigParser(interpolation=None, comment_prefixes=("#", ";", "!"))
-            config.read(conf_file)
-            val_found = False
-            for section in config.sections():
-                if config.has_option(section, key):
-                    found_keys.append((conf_file, config.get(section, key).strip().strip("\"'")))
-                    val_found = True
-                    break
+            config = data["config"]
+            with open(fname, "w", encoding="utf-8") as fp:
+                config.write(fp)
 
-            if not val_found:
-                # Fallback to raw line parsing for unsectioned keys
-                with open(conf_file, "r", encoding="utf-8") as f:
-                    content = f.read()
+            print(f"Wrote config {fname}")
+            changed = True
 
-                for line in content.splitlines():
-                    stripped = line.strip()
-                    if (
-                        stripped
-                        and not stripped.startswith("#")
-                        and not stripped.startswith(";")
-                        and not stripped.startswith("[")
-                        and not stripped.startswith("!")
-                    ):
-                        if re.match(rf"^{re.escape(key)}\s*=", stripped):
-                            found_keys.append(
-                                (
-                                    conf_file,
-                                    re.sub(rf"^{re.escape(key)}\s*=\s*", "", stripped)
-                                    .strip()
-                                    .strip("\"'"),
-                                )
-                            )
-                            break
+        if changed:
+            print(f"Config modified, restarting {self.service}...")
+            res = self.run(["systemctl", "restart", self.service], check=True)
+            if res.returncode:
+                sys.exit(
+                    f"{self.service} failed to start. Check journalctl -u {self.service} for details.",
+                )
 
-        if found_keys:
-            _, last_val = found_keys[-1]
-            is_numeric = last_val.isdigit() and value.isdigit()
-            if is_numeric and int(last_val) >= int(value):
-                print(f"  {key} is already {last_val} (>= {value}), no update needed.")
-                return False
-
-            if last_val == value:
-                print(f"  {key} is already {value}, no update needed.")
-                return False
-
-        print(f"  Updating {key} to {value}")
-        self.config_modified = True
-
-        # Update the file where the last occurrence was
-        target_file = found_keys[-1][0] if found_keys else self.config_file
-        if os.path.exists(target_file):
-            lines = open(target_file, "r", encoding="utf-8").read().splitlines()
-        else:
-            lines = []
-
-        updated_lines = []
-        modified = False
-        for line in lines:
-            stripped = line.lstrip()
-            if re.match(rf"^{re.escape(key)}\s*=", stripped):
-                updated_lines.append(f"{key} = {value}")
-                modified = True
-            else:
-                updated_lines.append(line)
-        if modified:
-            open(target_file, "w", encoding="utf-8").write("\n".join(updated_lines) + "\n")
-            return True
-
-        # Add to target config if not found anywhere
-        os.makedirs(self.config_dir, exist_ok=True)
-        open(target_file, "a").write("\n")
-        content = open(target_file, "r").read()
-
-        # MariaDB 10.5+ strictly reads [mariadbd], fallback to [mysqld]
-        if "[mariadbd]" in content:
-            content = re.sub(r"(\[mariadbd\])", rf"\1\n{key} = {value}", content, count=1)
-        elif "[mysqld]" in content:
-            content = re.sub(r"(\[mysqld\])", rf"\1\n{key} = {value}", content, count=1)
-        else:
-            content = f"[mariadbd]\n{key} = {value}\n"
-        open(target_file, "w").write(content)
-        return True
+            sleep(5)
 
     def _manage_service(self):
         """Start/enable MariaDB/MySQL and handle restarts if config changed."""
-        print("Starting and enabling MariaDB/MySQL service...")
-        self.run(["systemctl", "enable", "--now", "mariadb.service"], check=True)
+        print(f"Enabling {self.service}...")
+        self.run(["systemctl", "enable", "--now", self.service], check=True)
 
-        if self.config_modified:
-            print("  Config modified, restarting service...")
-            self.run(["systemctl", "restart", "mariadb.service"], check=True)
+        res = self.run(["systemctl", "is-active", "--quiet", self.service], capture_output=True)
+        if res.returncode:
+            print("  Starting service...")
+            res = self.run(["systemctl", "restart", args], check=True)
+            if res.returncode:
+                sys.exit(
+                    f"{self.service} failed to start. Check journalctl -u {self.service} for details.",
+                )
+
             sleep(5)
-
-        res = self.run(
-            ["systemctl", "is-active", "--quiet", "mariadb.service"], capture_output=True
-        )
-        if res.returncode != 0:
-            print(
-                "MariaDB/MySQL failed to start. Check journalctl -u mariadb.service for details.",
-                file=sys.stderr,
-            )
-            sys.exit(1)
 
     def _configure_database(self):
         """Create database, user, and grants."""
@@ -287,6 +261,7 @@ class MariaDBSysbenchSetup:
         """Orchestrate the full setup process."""
         self._manage_service()
 
+        self._read_config_files()
         vars_to_set = [
             ("symbolic-links", "0"),
             ("max_connections", "100000"),
@@ -296,7 +271,8 @@ class MariaDBSysbenchSetup:
             ("skip-networking", "0"),
         ]
         for k, v in vars_to_set:
-            self._set_config_var(k, v)
+            self._set_config_var("mysqld", k, v)
+        self._write_config_files()
 
         self._configure_database()
         self._run_sysbench()
@@ -329,11 +305,24 @@ def main():
         "--time", type=int, default=DEFAULT_BENCH_TIME, help="Benchmark duration in seconds"
     )
     parser.add_argument("--host-ip", default=None, help="Force IP address for MySQL connection")
-    parser.add_argument(
-        "--mysql-cmd", default=DEFAULT_MYSQL_CMD, help="MySQL client command (default: mariadb)"
-    )
+    parser.add_argument("--mysql-cmd", help="MySQL client command (default: auto)")
+    parser.add_argument("--service", help="MySQL client command (default: mariadb.service)")
 
     args = parser.parse_args()
+
+    if not args.service:
+        args.service = "mariadb.service"
+
+    if not args.mysql_cmd:
+        mysql = which("mariadb")
+        if not mysql:
+            mysql = which("mysql")
+
+        if not mysql:
+            sys.exit("Error: mysql/mariadb client not found!")
+
+        args.mysql_cmd = mysql
+
     mysqlsetup = MariaDBSysbenchSetup(args)
     mysqlsetup.setup()
 
