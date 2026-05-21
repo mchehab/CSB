@@ -45,7 +45,12 @@
     }
   },
   "containers": {
-    "core_count": 1
+    "core_count": 1,
+    "image": "hub.oepkgs.net/openeuler/openeuler",
+    "build": [
+      "ENV SYSBENCH_HOME=$(pwd)/bm-external",
+      "RUN dnf install -y mariadb-connector-c libpq"
+    ]
   },
   "applications": [
     {
