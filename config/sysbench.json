@@ -47,7 +47,8 @@
   "containers": {
     "core_count": 1,
     "build": [
-      "ENV SYSBENCH_HOME=/home/bm-external"
+      "COPY bm-external /",
+      "ENV SYSBENCH_HOME=/sysbench"
     ]
   },
   "applications": [

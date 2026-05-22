@@ -249,12 +249,15 @@ class ContainersConfig(dict):
                     continue
 
                 for key, value in resp_json.items():
-                    if key == "stream":
+                    if key in ["stream", ""]:
                         log_type = LogType.INFO
-                        bm_log(value.rstrip("\n"), log_type)
+                        bm_log(value.rstrip("\n"), LogType.INFO)
+                    elif isinstance(value, dict):
+                        bm_log(f"{key}:", LogType.INFO)
+                        for k, v in value.items():
+                            bm_log(f"  {k}: {v}", LogType.INFO)
                     else:
-                        log_type = LogType.ERROR
-                        bm_log(value, log_type)
+                        bm_log(f"{key}: {value}", LogType.ERROR)
 
         except docker.errors.BuildError as e:
             for chunk in e.build_log:
