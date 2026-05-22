@@ -26,6 +26,7 @@ class Container(ExecutionUnit):
         self,
         idx,
         image,
+        image_matches_host,
         home_dir,
         core_set,
         record_data_dir,
@@ -36,6 +37,7 @@ class Container(ExecutionUnit):
         super().__init__(idx=idx, type=ExecutionType.CONTAINER, home_dir=home_dir, app=app)
         self.client = docker.from_env()  # Initialize Docker client
         self.image = image
+        self.image_matches_host = image_matches_host
         self.core_set = core_set
         self.record_data_dir = record_data_dir
         self.port = port + self.idx if port else None
@@ -176,17 +178,24 @@ class Container(ExecutionUnit):
 
         volumes = {
             host_home_dir: {"bind": "/home", "mode": "rw"},
-            "/usr": {"bind": "/usr", "mode": "rw"},
-            "/mnt": {"bind": "/mnt", "mode": "rw"},
             "/lib/modules": {"bind": "/lib/modules", "mode": "rw"},
             "/etc": {"bind": "/etc", "mode": "rw"},
         }
+
+        if self.image_matches_host:
+            volumes.update(
+                {
+                    "/usr": {"bind": "/usr", "mode": "rw"},
+                    "/mnt": {"bind": "/mnt", "mode": "rw"},
+                }
+            )
 
         bm_log(f"Starting Container: {self.name}")
         try:
             ports = {f"{self.port}/tcp": ("0.0.0.0", self.port)} if self.port else None
             container = self.client.containers.run(
                 image=self.image,
+                image_matches_host=self.image_matches_host,
                 command=["bash", "-c", commands],
                 name=self.name,
                 cpuset_cpus=self.core_set,
@@ -247,6 +256,7 @@ class Containers(Executer):
                 idx=i,
                 home_dir=home_dir,
                 image=config.image,
+                image_matches_host=config.image_matches_host,
                 core_set=core_set,
                 record_data_dir=record_data_dir,
                 port=config.port,
