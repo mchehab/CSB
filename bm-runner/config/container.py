@@ -5,6 +5,7 @@ from typing import Optional
 from config.list import ListConfig
 import docker
 import docker.errors
+import json
 import os
 import sys
 from utils.logger import bm_log, LogType
@@ -232,18 +233,35 @@ class ContainersConfig(dict):
         bm_log(f"Building image '{self.image}'")
 
         try:
-            image, logs = client.images.build(
+            resp = client.api.build(
                 tag=self.image,
                 dockerfile=dockerfile,
                 path=path,
                 rm=True,
             )
+            for chunk in resp:
+                chunk_str = chunk.decode("utf-8", errors="ignore")
+                try:
+                    resp_json = json.loads(chunk_str)
+                except json.JSONDecodeError:
+                    bm_log(chunk_str, LogType.INFO)
+                    continue
+
+                for key, value in resp_json.items():
+                    if key == "stream":
+                        log_type = LogType.INFO
+                        bm_log(value.rstrip("\n"), log_type)
+                    else:
+                        log_type = LogType.ERROR
+                        bm_log(value, log_type)
+
         except docker.errors.BuildError as e:
             for chunk in e.build_log:
                 if "stream" in chunk:
                     sys.stdout.write(chunk["stream"])
             raise
 
+        image = client.images.get(self.image)
         bm_log(f"Image built: {image.tags}")
 
     def __pull_image(self):
