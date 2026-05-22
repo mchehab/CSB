@@ -47,8 +47,8 @@
   "containers": {
     "core_count": 1,
     "build": [
-      "COPY bm-external /",
-      "ENV SYSBENCH_HOME=/sysbench"
+        "WORKDIR $HOME/bm-external/sysbench/share/sysbench/",
+        "ENV PATH=$HOME/bm-external/sysbench/bin:$PATH"
     ]
   },
   "applications": [
