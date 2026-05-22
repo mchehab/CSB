@@ -76,7 +76,14 @@ class ContainersConfig(dict):
         self.topo = Topology()
         self.core_count = core_count
         self.policy = CoreAssignPolicy.from_dict(core_assignment_policy)
-        self.image = image if image is not None else self.DEFAULT_IMG[get_os()]
+
+        if image is None:
+            self.image = self.DEFAULT_IMG[get_os()]
+            self.image_matches_host = True
+        else:
+            self.image = image
+            self.image_matches_host = False
+
         self.name = name
         self.port = port
         self.build = build
