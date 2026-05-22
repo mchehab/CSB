@@ -77,10 +77,18 @@ class Container(ExecutionUnit):
         result = container.wait(timeout=timeout)
         exit_code = result["StatusCode"]
         if exit_code != 0:
-            bm_log(
-                f"Container: {self.name} has failed/or crashed with exit code {exit_code}",
-                LogType.FATAL,
-            )
+            try:
+                logs = container.logs(stdout=True, stderr=True, timestamps=True, stream=False)
+                logs_str = logs.decode("utf-8", errors="replace")
+                bm_log(
+                    f"Container: {self.name} has failed/or crashed with exit code {exit_code}.\n\n{logs_str}",
+                    LogType.FATAL,
+                )
+            except Exception:
+                bm_log(
+                    f"Container: {self.name} has failed/or crashed with exit code {exit_code}",
+                    LogType.FATAL,
+                )
             sys.exit(1)
 
     def stop(self):
