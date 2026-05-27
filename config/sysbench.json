@@ -47,8 +47,11 @@
   "containers": {
     "core_count": 1,
     "build": [
-        "WORKDIR $HOME/bm-external/sysbench/share/sysbench/",
-        "ENV PATH=$HOME/bm-external/sysbench/bin:$PATH"
+        "ARG HOME",
+        "ENV HOME=/home/mchehab/csb",
+        "WORKDIR ${HOME}/bm-external/sysbench/share/sysbench/",
+        "ENV PATH=${HOME}/bm-external/sysbench/bin:$PATH",
+        "RUN echo PATH is now ${PATH}"
     ]
   },
   "applications": [
