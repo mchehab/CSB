@@ -1,4 +1,4 @@
 #!/bin/bash -e
 
-SCRIPT_DIR="$(readlink -f $(dirname "$0")/..)"
+SCRIPT_DIR="$(readlink -f $(dirname "$0")/../..)"
 exec $SCRIPT_DIR/bm-external/sysbench/bin/sysbench "$@"

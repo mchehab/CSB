@@ -49,8 +49,8 @@
   },
   "applications": [
     {
-      "name": "sysbench",
-      "path": "helpers",
+      "name": "sysbench.sh",
+      "path": "scripts/org-apps",
       "args": "--mysql-host={host_ip} --mysql-port=3306 --mysql-db=sbtest --mysql-user=sbtest --mysql-password='Password@123' --threads={threads} --tables=3 --table-size=10000 --time={duration} oltp_read_write run",
       "adapter": {
         "name": "sysbench-adapter.py"
