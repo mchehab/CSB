@@ -25,6 +25,64 @@
     {
       "x": "container_cnt",
       "x_lbl": "#Containers",
+      "y": "sql_statistics.queries_performed.other",
+      "y_lbl": "Other Throughput",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_read_write other vs. #container"
+    },
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.queries_performed.total",
+      "y_lbl": "Total Throughput",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_read_write total vs. #container"
+    },
+
+
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.transactions",
+      "y_lbl": "Transactions",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_read_write transactions vs. #container"
+    },
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.queries",
+      "y_lbl": "Transactions",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_read_write queries vs. #container"
+    },
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.ignored_errors",
+      "y_lbl": "Transactions",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_read_write ignored_errors vs. #container"
+    },
+
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
       "y": "threads_fairness.events",
       "y_lbl": "Events Throughput",
       "hue_lbl": "Executer",
