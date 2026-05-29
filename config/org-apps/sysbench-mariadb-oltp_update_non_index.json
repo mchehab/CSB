@@ -1,0 +1,118 @@
+{
+  "plots": [
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.queries_performed.read",
+      "y_lbl": "Read Throughput",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_update_non_index read vs. #container"
+    },
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.queries_performed.write",
+      "y_lbl": "Write Throughput",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_update_non_index write vs. #container"
+    },
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.queries_performed.other",
+      "y_lbl": "Other Throughput",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_update_non_index other vs. #container"
+    },
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.queries_performed.total",
+      "y_lbl": "Total Throughput",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_update_non_index total vs. #container"
+    },
+
+
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.transactions",
+      "y_lbl": "Transactions",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_update_non_index transactions vs. #container"
+    },
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.queries",
+      "y_lbl": "Transactions",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_update_non_index queries vs. #container"
+    },
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "sql_statistics.ignored_errors",
+      "y_lbl": "Transactions",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_update_non_index ignored_errors vs. #container"
+    },
+
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "threads_fairness.events",
+      "y_lbl": "Events Throughput",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "mean",
+      "title": "Sysbench MariaDB oltp_update_non_index events vs. #container"
+    }
+  ],
+  "benchmark_config": {
+    "duration": 3,
+    "threads": {
+      "values": [
+        [
+          1
+        ]
+      ]
+    }
+  },
+  "containers": {
+    "core_count": 1
+  },
+  "applications": [
+    {
+      "name": "sysbench.sh",
+      "path": "scripts/org-apps",
+      "args": "--mysql-host={host_ip} --mysql-port=3306 --mysql-db=sbtest --mysql-user=sbtest --mysql-password='Password@123' --threads={threads} --tables=3 --table-size=10000 --time={duration} oltp_update_non_index run",
+      "adapter": {
+        "name": "sysbench-adapter.py"
+      }
+    }
+  ]
+}
