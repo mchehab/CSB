@@ -225,7 +225,16 @@ class Container(ExecutionUnit):
         if self.app.cd:
             assert self.app.path is not None, "path is not set while change directory is requested!"
             command = f"cd {self.app.path} && {command}"
-        commands = f"{self.CMD_WHILE_NOT_START} {command} > {resolve_path(self.output_file, use_in_container=True)} 2> {resolve_path(self.err_file, use_in_container=True)}"  # same as self.output_file outside container.
+
+        output_file = resolve_path(self.output_file, use_in_container=True)
+        err_file = resolve_path(self.err_file, use_in_container=True)
+
+        assert os.path.isdir(
+            os.path.dirname(output_file)
+        ), f"dir to store {output_file} doesn't exist!"
+        assert os.path.isdir(os.path.dirname(err_file)), f"dir to store {err_file} doesn't exist!"
+
+        commands = f"{self.CMD_WHILE_NOT_START} {command} > {output_file} 2> {err_file}"  # same as self.output_file outside container.
         return self.__start(commands)
 
 
