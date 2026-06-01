@@ -116,14 +116,13 @@ def plot_chart(
     plot: PlotConfig,
     df: DataFrame,
     out_fig_name,
-    add_points:bool = False,
-    gen_pdf:bool = False,
+    add_points: bool = False,
+    gen_pdf: bool = False,
     **kwargs,
 ):
     pc = PlotChart(plot)
     pc.add(plot, df, add_points=add_points, **kwargs)
     pc.save(out_fig_name, gen_pdf)
-
 
 
 ###########################################################################
@@ -237,36 +236,82 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
         dir (str): where to store the plot.
     """
     prefix = config.y
-    min_col = f"{prefix}_min"
-    max_col = f"{prefix}_max"
-    avg_col = f"{prefix}_avg"
     df = org_df.copy()
-    if avg_col not in df.columns:
-        df[avg_col] = (df[min_col] + df[max_col]) / 2
-    else:
-        # maximum avg value
-        # max_avg = max(df[avg_col])
-        # minimum a max value
-        min_max = min(df[max_col])
-        if min_max != 0:
-            # transformation factor
-            # alpha = max_avg / min_max
-            # transform max to max*alpha
-            df[max_col] = list(map(lambda avg, max: avg + (avg // max), df[avg_col], df[max_col]))
+    pc = PlotChart(config)
+    min_col = None
+    avg_col = None
+    max_col = None
+    percentile = None
+    metric = None
 
-    sdf = df[[config.x, config.hue, min_col, avg_col, max_col]]
+    for c in df.columns:
+        if c.startswith(prefix):
+            if c.endswith("avg_col"):
+                avg_col = c
+            if c.endswith("percentile"):
+                percentile = c
+
+            if c.endswith("min"):
+                min_col = c
+
+            if c.endswith("max"):
+                max_col = c
+
+    if not min_col or not max_col:
+        return
+
+    # If both percentile and average are present, use percentile, as it
+    # provides an expected value for the metric on most cases.
+
+    if percentile:
+        metric = percentile
+    elif avg_col:
+        metric = avg_col
+
+    if metric:
+        tmp_config = PlotConfig(**config)
+        tmp_config.y = metric
+
+        pc.add(
+            tmp_config,
+            df[[config.x, config.hue, metric]],
+            estimator="mean",
+        )
+
+        # Mathplotlib will always calculate its own average line, calculated
+        # using multiple Y samples for each X value. When the average metric
+        # is calculated by the benchmark, we need to replace it by the data
+        # calculated at by the tool, as otherwise the calculus will be wrong.
+        # So, make the melt data average line invisible.
+        linewidth = 0
+        legend = False
+    else:
+        # Plot estimated average
+        linewidth = 1
+        legend = True
+
     transformed_data = pd.melt(
-        sdf,
+        df[[config.x, config.hue, min_col, max_col]],
         id_vars=[config.hue, config.x],
-        value_vars=[min_col, avg_col, max_col],
+        value_vars=[min_col, max_col],
         value_name=config.y,
+        var_name="metric",
     )
-    plot_chart(
-        plot=config,
-        df=transformed_data,
-        out_fig_name=f"{dir}/{config.y}_min_avg_max",
-        estimator="median",
+
+    pc.add(
+        config,
+        transformed_data,
+        linewidth=linewidth,
+        legend=legend,
+        estimator="mean",
+        # Mathplotlib doesn't really show max/min. Instead, it tries to
+        # filter out values too high/too or low. Its default is to use a
+        # standard distribution. Instead, use a more realistic error bar
+        # using percentile.
+        errorbar="pi",
     )
+
+    pc.save(out_fig_name=f"{dir}/{config.y}_min_avg_max")
 
 
 ###########################################################
