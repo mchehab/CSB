@@ -237,36 +237,66 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
         dir (str): where to store the plot.
     """
     prefix = config.y
-    min_col = f"{prefix}_min"
-    max_col = f"{prefix}_max"
-    avg_col = f"{prefix}_avg"
     df = org_df.copy()
-    if avg_col not in df.columns:
-        df[avg_col] = (df[min_col] + df[max_col]) / 2
-    else:
-        # maximum avg value
-        # max_avg = max(df[avg_col])
-        # minimum a max value
-        min_max = min(df[max_col])
-        if min_max != 0:
-            # transformation factor
-            # alpha = max_avg / min_max
-            # transform max to max*alpha
-            df[max_col] = list(map(lambda avg, max: avg + (avg // max), df[avg_col], df[max_col]))
+    pc = PlotChart(config)
+    avg_col = None
+    min_col = None
+    max_col = None
+    percentile = None
 
-    sdf = df[[config.x, config.hue, min_col, avg_col, max_col]]
+    all_metric_vars = []
+    for c in df.columns:
+        if c.startswith(prefix):
+            if c.endswith("avg_col"):
+                avg_col = c
+            if c.endswith("percentile"):
+                percentile = c
+
+            if c.endswith("min"):
+                min_col = c
+
+            if c.endswith("max"):
+                max_col = c
+
+    if not min_col or not max_col:
+        return
+
+    if percentile:
+        metric = percentile
+    elif avg_col:
+        metric = percentile
+    if not metric:
+        metric = avg_col
+
+        df[metric] = (df[min_col] + df[max_col]) / 2
+
+    if metric:
+        tmp_config = PlotConfig(**config)
+        tmp_config.y = metric
+
+        pc.add(
+            tmp_config,
+            df[[config.x, config.hue, metric]],
+            estimator="mean",
+        )
+
     transformed_data = pd.melt(
-        sdf,
+        df[[config.x, config.hue, min_col, max_col]],
         id_vars=[config.hue, config.x],
-        value_vars=[min_col, avg_col, max_col],
+        value_vars=[min_col, max_col],
         value_name=config.y,
+        var_name="metric"
     )
-    plot_chart(
-        plot=config,
-        df=transformed_data,
-        out_fig_name=f"{dir}/{config.y}_min_avg_max",
-        estimator="median",
+
+    pc.add(config,
+           transformed_data,
+           estimator="mean",
+           errorbar="pi",
+           linewidth=0,
+           legend=False,
     )
+
+    pc.save(out_fig_name=f"{dir}/{config.y}_min_avg_max")
 
 
 ###########################################################
