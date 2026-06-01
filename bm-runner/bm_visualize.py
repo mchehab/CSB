@@ -116,14 +116,13 @@ def plot_chart(
     plot: PlotConfig,
     df: DataFrame,
     out_fig_name,
-    add_points:bool = False,
-    gen_pdf:bool = False,
+    add_points: bool = False,
+    gen_pdf: bool = False,
     **kwargs,
 ):
     pc = PlotChart(plot)
     pc.add(plot, df, add_points=add_points, **kwargs)
     pc.save(out_fig_name, gen_pdf)
-
 
 
 ###########################################################################
@@ -244,7 +243,6 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
     max_col = None
     percentile = None
 
-    all_metric_vars = []
     for c in df.columns:
         if c.startswith(prefix):
             if c.endswith("avg_col"):
@@ -285,15 +283,16 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
         id_vars=[config.hue, config.x],
         value_vars=[min_col, max_col],
         value_name=config.y,
-        var_name="metric"
+        var_name="metric",
     )
 
-    pc.add(config,
-           transformed_data,
-           estimator="mean",
-           errorbar="pi",
-           linewidth=0,
-           legend=False,
+    pc.add(
+        config,
+        transformed_data,
+        estimator="mean",
+        errorbar="pi",
+        linewidth=0,
+        legend=False,
     )
 
     pc.save(out_fig_name=f"{dir}/{config.y}_min_avg_max")
