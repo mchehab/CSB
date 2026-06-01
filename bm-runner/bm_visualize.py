@@ -217,9 +217,9 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
         dir (str): where to store the plot.
     """
     prefix = config.y
-    min_col = f"{prefix}_min"
-    max_col = f"{prefix}_max"
-    avg_col = f"{prefix}_avg"
+    min_col = f"{prefix}.min"
+    max_col = f"{prefix}.max"
+    avg_col = f"{prefix}.95th_percentile"
     df = org_df.copy()
     if avg_col not in df.columns:
         df[avg_col] = (df[min_col] + df[max_col]) / 2

@@ -3,6 +3,17 @@
     {
       "x": "container_cnt",
       "x_lbl": "#Containers",
+      "y": "latency",
+      "y_lbl": "Latency (min/max/95% percentile)",
+      "hue_lbl": "Executer",
+      "hue": "execution_type",
+      "shape": "lineplot",
+      "type": "min_max_avg",
+      "title": "Sysbench MariaDB oltp_read_write latency vs. #container"
+    },
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
       "y": "sql_statistics.queries_performed.read",
       "y_lbl": "Read Throughput",
       "hue_lbl": "Executer",
@@ -93,7 +104,7 @@
     }
   ],
   "benchmark_config": {
-    "duration": 60,
+    "duration": 1,
     "threads": {
       "values": [
         [
