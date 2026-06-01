@@ -7,10 +7,10 @@ sudo dnf install mariadb-server mariadb-devel mariadb-connector-c postgresql-ser
 
 Install sysbench from git tree using:
 ```bash
-sudo helpers/configure-sysbench.sh
+sudo scripts/bm-external/sysbench/configure.sh
 ```
 
 To run just one instance in bare metal host, run:
 ```bash
-sudo helpers/prepare_sysbench.py
+sudo scripts/bm-external/sysbench/prepare.py
 ```

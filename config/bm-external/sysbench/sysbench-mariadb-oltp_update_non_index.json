@@ -9,7 +9,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB oltp_write_only read vs. #container"
+      "title": "Sysbench MariaDB oltp_update_non_index read vs. #container"
     },
     {
       "x": "container_cnt",
@@ -20,7 +20,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB oltp_write_only write vs. #container"
+      "title": "Sysbench MariaDB oltp_update_non_index write vs. #container"
     },
     {
       "x": "container_cnt",
@@ -31,7 +31,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB oltp_write_only other vs. #container"
+      "title": "Sysbench MariaDB oltp_update_non_index other vs. #container"
     },
     {
       "x": "container_cnt",
@@ -42,7 +42,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB oltp_write_only total vs. #container"
+      "title": "Sysbench MariaDB oltp_update_non_index total vs. #container"
     },
     {
       "x": "container_cnt",
@@ -53,7 +53,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB oltp_write_only transactions vs. #container"
+      "title": "Sysbench MariaDB oltp_update_non_index transactions vs. #container"
     },
     {
       "x": "container_cnt",
@@ -64,7 +64,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB oltp_write_only queries vs. #container"
+      "title": "Sysbench MariaDB oltp_update_non_index queries vs. #container"
     },
     {
       "x": "container_cnt",
@@ -75,7 +75,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB oltp_write_only ignored_errors vs. #container"
+      "title": "Sysbench MariaDB oltp_update_non_index ignored_errors vs. #container"
     },
     {
       "x": "container_cnt",
@@ -86,7 +86,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB oltp_write_only events vs. #container"
+      "title": "Sysbench MariaDB oltp_update_non_index events vs. #container"
     }
   ],
   "benchmark_config": {
@@ -105,8 +105,8 @@
   "applications": [
     {
       "name": "sysbench.sh",
-      "path": "scripts/org-apps",
-      "args": "--mysql-host={host_ip} --mysql-port=3306 --mysql-db=sbtest --mysql-user=sbtest --mysql-password='Password@123' --threads={threads} --tables=3 --table-size=10000 --time={duration} oltp_write_only run",
+      "path": "scripts/bm-external",
+      "args": "--mysql-host={host_ip} --mysql-port=3306 --mysql-db=sbtest --mysql-user=sbtest --mysql-password='Password@123' --threads={threads} --tables=3 --table-size=10000 --time={duration} oltp_update_non_index run",
       "adapter": {
         "name": "sysbench-adapter.py"
       }

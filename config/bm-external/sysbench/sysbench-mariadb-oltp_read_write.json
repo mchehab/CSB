@@ -9,7 +9,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB select_random_ranges read vs. #container"
+      "title": "Sysbench MariaDB oltp_read_write read vs. #container"
     },
     {
       "x": "container_cnt",
@@ -20,7 +20,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB select_random_ranges write vs. #container"
+      "title": "Sysbench MariaDB oltp_read_write write vs. #container"
     },
     {
       "x": "container_cnt",
@@ -31,7 +31,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB select_random_ranges other vs. #container"
+      "title": "Sysbench MariaDB oltp_read_write other vs. #container"
     },
     {
       "x": "container_cnt",
@@ -42,7 +42,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB select_random_ranges total vs. #container"
+      "title": "Sysbench MariaDB oltp_read_write total vs. #container"
     },
     {
       "x": "container_cnt",
@@ -53,7 +53,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB select_random_ranges transactions vs. #container"
+      "title": "Sysbench MariaDB oltp_read_write transactions vs. #container"
     },
     {
       "x": "container_cnt",
@@ -64,7 +64,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB select_random_ranges queries vs. #container"
+      "title": "Sysbench MariaDB oltp_read_write queries vs. #container"
     },
     {
       "x": "container_cnt",
@@ -75,7 +75,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB select_random_ranges ignored_errors vs. #container"
+      "title": "Sysbench MariaDB oltp_read_write ignored_errors vs. #container"
     },
     {
       "x": "container_cnt",
@@ -86,7 +86,7 @@
       "hue": "execution_type",
       "shape": "lineplot",
       "type": "mean",
-      "title": "Sysbench MariaDB select_random_ranges events vs. #container"
+      "title": "Sysbench MariaDB oltp_read_write events vs. #container"
     }
   ],
   "benchmark_config": {
@@ -105,8 +105,8 @@
   "applications": [
     {
       "name": "sysbench.sh",
-      "path": "scripts/org-apps",
-      "args": "--mysql-host={host_ip} --mysql-port=3306 --mysql-db=sbtest --mysql-user=sbtest --mysql-password='Password@123' --threads={threads} --tables=3 --table-size=10000 --time={duration} select_random_ranges run",
+      "path": "scripts/bm-external",
+      "args": "--mysql-host={host_ip} --mysql-port=3306 --mysql-db=sbtest --mysql-user=sbtest --mysql-password='Password@123' --threads={threads} --tables=3 --table-size=10000 --time={duration} oltp_read_write run",
       "adapter": {
         "name": "sysbench-adapter.py"
       }
