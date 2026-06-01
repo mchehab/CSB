@@ -93,7 +93,7 @@
     }
   ],
   "benchmark_config": {
-    "duration": 3,
+    "duration": 60,
     "threads": {
       "values": [
         [
