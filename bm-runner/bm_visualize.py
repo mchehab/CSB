@@ -36,74 +36,94 @@ def col_exists(df: DataFrame, col: str, title: str) -> bool:
     return True
 
 
+class PlotChart:
+    def __init__(self, plot: "PlotConfig"):
+        self.fig = plt.figure(dpi=150)
+
+        self.chart = self.fig.add_subplot()
+        self.chart.set_title(plot.title)
+
+    def add(
+        self,
+        plot: "PlotConfig",
+        df: DataFrame,
+        add_points: bool = False,
+        **kwargs,
+    ):
+        args = dict(kwargs)
+        # prep hue, we want to generate enough colors
+        cnt = df[plot.hue].nunique()
+        sorted_gp = sorted(df[plot.hue].unique())
+        palette = sns.color_palette(palette="hls", n_colors=cnt)
+        sns_plot_fun = getattr(sns, plot.shape)
+
+        if (
+            not col_exists(df, plot.y, plot.title)
+            or not col_exists(df, plot.x, plot.title)
+            or not col_exists(df, plot.hue, plot.title)
+        ):
+            return
+
+        chart = sns_plot_fun(
+            ax=self.chart,
+            data=df,
+            palette=palette,
+            x=plot.x,
+            hue=plot.hue,
+            hue_order=sorted_gp,
+            y=plot.y,
+            **args,
+        )
+        if add_points:
+            sns.scatterplot(
+                x=plot.x,
+                y=plot.y,
+                hue=plot.hue,
+                markers=plot.hue,
+                data=df,
+                hue_order=sorted_gp,
+                palette=palette,
+                ax=chart,
+                legend=False,
+            )
+
+        chart.set(xlabel=plot.x_lbl, ylabel=plot.y_lbl)
+        chart.grid(True)
+        new_ylim = 1.2 * max(df[plot.y])
+        chart.set_ylim(0, 1 if new_ylim == 0 else new_ylim)
+
+        plt.legend(
+            loc="upper left",
+            title=f"{plot.hue_lbl}",
+            bbox_to_anchor=(1, 1),
+            borderaxespad=0.3,
+            fontsize=4.5,
+        )
+
+    def save(self, out_fig_name, gen_pdf: bool = False):
+
+        self.fig.set_size_inches(w=10, h=8)
+        self.fig.tight_layout()
+
+        figure_name = f"{out_fig_name}_{time.perf_counter()}"
+        self.fig.savefig(f"{figure_name}.png", transparent=False)
+        if gen_pdf:
+            self.fig.savefig(f"{figure_name}.pdf", transparent=False)
+        plt.close()
+
+
 def plot_chart(
     plot: PlotConfig,
     df: DataFrame,
     out_fig_name,
-    add_points=False,
-    gen_pdf=False,
+    add_points:bool = False,
+    gen_pdf:bool = False,
     **kwargs,
 ):
-    args = dict(kwargs)
-    fig = plt.figure(dpi=150)
-    chart = fig.add_subplot()
-    chart.set_title(plot.title)
-    # prep hue, we want to generate enough colors
-    cnt = df[plot.hue].nunique()
-    sorted_gp = sorted(df[plot.hue].unique())
-    palette = sns.color_palette(palette="hls", n_colors=cnt)
-    sns_plot_fun = getattr(sns, plot.shape)
+    pc = PlotChart(plot)
+    pc.add(plot, df, add_points=add_points, **kwargs)
+    pc.save(out_fig_name, gen_pdf)
 
-    if (
-        not col_exists(df, plot.y, plot.title)
-        or not col_exists(df, plot.x, plot.title)
-        or not col_exists(df, plot.hue, plot.title)
-    ):
-        return
-
-    chart = sns_plot_fun(
-        ax=chart,
-        data=df,
-        palette=palette,
-        x=plot.x,
-        hue=plot.hue,
-        hue_order=sorted_gp,
-        y=plot.y,
-        **args,
-    )
-    if add_points:
-        sns.scatterplot(
-            x=plot.x,
-            y=plot.y,
-            hue=plot.hue,
-            markers=plot.hue,
-            data=df,
-            hue_order=sorted_gp,
-            palette=palette,
-            ax=chart,
-            legend=False,
-        )
-
-    chart.set(xlabel=plot.x_lbl, ylabel=plot.y_lbl)
-    chart.grid(True)
-    new_ylim = 1.2 * max(df[plot.y])
-    chart.set_ylim(0, 1 if new_ylim == 0 else new_ylim)
-
-    plt.legend(
-        loc="upper left",
-        title=f"{plot.hue_lbl}",
-        bbox_to_anchor=(1, 1),
-        borderaxespad=0.3,
-        fontsize=4.5,
-    )
-
-    fig.set_size_inches(w=10, h=8)
-    fig.tight_layout()
-    figure_name = f"{out_fig_name}_{time.perf_counter()}"
-    fig.savefig(f"{figure_name}.png", transparent=False)
-    if gen_pdf:
-        fig.savefig(f"{figure_name}.pdf", transparent=False)
-    plt.close()
 
 
 ###########################################################################
