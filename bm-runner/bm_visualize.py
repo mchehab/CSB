@@ -238,10 +238,11 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
     prefix = config.y
     df = org_df.copy()
     pc = PlotChart(config)
-    avg_col = None
     min_col = None
+    avg_col = None
     max_col = None
     percentile = None
+    metric = None
 
     for c in df.columns:
         if c.startswith(prefix):
@@ -262,11 +263,7 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
     if percentile:
         metric = percentile
     elif avg_col:
-        metric = percentile
-    if not metric:
         metric = avg_col
-
-        df[metric] = (df[min_col] + df[max_col]) / 2
 
     if metric:
         tmp_config = PlotConfig(**config)
@@ -277,6 +274,11 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
             df[[config.x, config.hue, metric]],
             estimator="mean",
         )
+
+        linewidth = 0
+    else:
+        # Plot estimated average
+        linewidth = 1
 
     transformed_data = pd.melt(
         df[[config.x, config.hue, min_col, max_col]],
@@ -291,7 +293,7 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
         transformed_data,
         estimator="mean",
         errorbar="pi",
-        linewidth=0,
+        linewidth=linewidth,
         legend=False,
     )
 
