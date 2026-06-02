@@ -55,8 +55,6 @@
       "type": "mean",
       "title": "Sysbench MariaDB oltp_read_write total vs. #container"
     },
-
-
     {
       "x": "container_cnt",
       "x_lbl": "#Containers",
@@ -90,7 +88,6 @@
       "type": "mean",
       "title": "Sysbench MariaDB oltp_read_write ignored_errors vs. #container"
     },
-
     {
       "x": "container_cnt",
       "x_lbl": "#Containers",
