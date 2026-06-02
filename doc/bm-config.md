@@ -71,7 +71,7 @@ Plot configuration for benchmark results. Represented as a JSON array of objects
 |hue_lbl|str|:white_check_mark:|`{hue}`|    The label for the hue/groupby. If None, defaults to `{hue}`. |
 |title|str|:white_check_mark:|`{x_lbl} vs. {y_lbl}`|    The title of the plot. If None, defaults to `{x_lbl} vs. {y_lbl}`. |
 |shape|str|:white_check_mark:||    The shape/type of the plot (e.g., 'lineplot', 'barplot'). If None, defaults based on `type`. |
-|type|[PlotType](#plottype)|:white_check_mark:|`PlotType.NORMAL`|    The type of plot to be created, which determines default shape and other behaviors. |
+|type|[PlotType](#plottype)|:white_check_mark:|`normal`|    The type of plot to be created, which determines default shape and other behaviors. |
 
 ## NicsConfig
 NicsConfig configures the assignment of Network Interface Cards (NICs) or their Virtual Functions (VFs) to containers. Represented as a JSON object. 
@@ -110,8 +110,8 @@ Adapters used to transform the output of an external benchmark into the format u
 CPU/Core assignment policy for execution units, i.e. containers and native processes.  
 |Field|Type|Optional|Default|Description|
 |---|---|---|---|---|
-|pack_group|[PackGroup](#packgroup)|:white_check_mark:|`PackGroup.NO_PACK`|    Specifies the policy of CPU selection, whether in the same NUMA, same Package,     can cross packages, or distant. |
-|cpu_order|[CpuOrder](#cpuorder)|:white_check_mark:|`CpuOrder.ASC`|    Specifies the assignment order, whether ascending to starting for CPU lowest index,     or descending starting from the highest CPU index.     This configuration is ignored if pack_group is distant. |
+|pack_group|[PackGroup](#packgroup)|:white_check_mark:|`none`|    Specifies the policy of CPU selection, whether in the same NUMA, same Package,     can cross packages, or distant. |
+|cpu_order|[CpuOrder](#cpuorder)|:white_check_mark:|`asc`|    Specifies the assignment order, whether ascending to starting for CPU lowest index,     or descending starting from the highest CPU index.     This configuration is ignored if pack_group is distant. |
 |one_cpu_per_core|bool|:white_check_mark:|`False`|    Whether to use only one CPU from each Core. This is relevant to hyper-threading     when multiple CPUs share the same core. When set to true, from each core only     the first CPU is considered. |
 ## MonitorType
 Monitors are used to monitor performance. They can be used to analyze the behavior of the benchmarks.  <br/>Supported values:
