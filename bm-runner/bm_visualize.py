@@ -37,7 +37,7 @@ def col_exists(df: DataFrame, col: str, title: str) -> bool:
 
 
 class PlotChart:
-    def __init__(self, plot: "PlotConfig"):
+    def __init__(self, plot: PlotConfig):
         self.fig = plt.figure(dpi=150)
 
         self.chart = self.fig.add_subplot()
@@ -45,7 +45,7 @@ class PlotChart:
 
     def add(
         self,
-        plot: "PlotConfig",
+        plot: PlotConfig,
         df: DataFrame,
         add_points: bool = False,
         **kwargs,
@@ -227,8 +227,8 @@ def create_success_rate_plot(org_df, config: PlotConfig, dir):
 def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
     """
     Treats `config.y` as a prefix and look for min, max, and avg values
-    It assumes such columns exist in the dataframe <config.y>_min,
-    <config.y>_max & <config.y>_avg
+    It assumes such columns exist in the dataframe <config.y>min,
+    <config.y>max and, optionally, <config.y>percentile or <config.y>avg
 
     Args:
         org_df: dataframe
@@ -246,7 +246,7 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
 
     for c in df.columns:
         if c.startswith(prefix):
-            if c.endswith("avg_col"):
+            if c.endswith("avg"):
                 avg_col = c
             if c.endswith("percentile"):
                 percentile = c
