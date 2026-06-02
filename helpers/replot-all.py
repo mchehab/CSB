@@ -37,7 +37,12 @@ def read_csv_header(filepath: str) -> str:
 def main():
     """Main code"""
     parser = argparse.ArgumentParser(description="Re-generate all graphs from CSV files.")
-    parser.add_argument("csv_dirs", nargs="+", help="Directories that contain CSV files.")
+    parser.add_argument(
+        "csv_dirs",
+        nargs="*",
+        default=["./results"],
+        help="Directories that contain CSV files (default = %(default)s).",
+    )
     parser.add_argument("-d", "--debug", action="store_true", help="Enable debug.")
     parser.add_argument(
         "--config-root",
