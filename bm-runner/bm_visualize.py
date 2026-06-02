@@ -260,6 +260,9 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
     if not min_col or not max_col:
         return
 
+    # If both percentile and average are present, use percentile, as it
+    # provides an expected value for the metric on most cases.
+
     if percentile:
         metric = percentile
     elif avg_col:
@@ -275,10 +278,17 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
             estimator="mean",
         )
 
+        # Mathplotlib will always calculate its own average line, calculated
+        # using multiple Y samples for each X value. When the average metric
+        # is calculated by the benchmark, we need to replace it by the data
+        # calculated at by the tool, as otherwise the calculus will be wrong.
+        # So, make the melt data average line invisible.
         linewidth = 0
+        legend = False
     else:
         # Plot estimated average
         linewidth = 1
+        legend = True
 
     transformed_data = pd.melt(
         df[[config.x, config.hue, min_col, max_col]],
@@ -291,10 +301,14 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
     pc.add(
         config,
         transformed_data,
-        estimator="mean",
-        errorbar="pi",
         linewidth=linewidth,
-        legend=False,
+        legend=legend,
+        estimator="mean",
+        # Mathplotlib doesn't really show max/min. Instead, it tries to
+        # filter out values too high/too or low. Its default is to use a
+        # standard distribution. Instead, use a more realistic error bar
+        # using percentile.
+        errorbar="pi",
     )
 
     pc.save(out_fig_name=f"{dir}/{config.y}_min_avg_max")
