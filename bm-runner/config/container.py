@@ -165,10 +165,10 @@ class ContainersConfig(dict):
         assert default_container_list[0] == 0, "unexpected, given the range starts with zero"
         # we remove zero from the list
         default_container_list.remove(0)
-        # make sure first element of the list is self.core_count
-        if default_container_list[0] != self.core_count:
+        # make sure first element of the list is one
+        if default_container_list[0] != step:
             # insert don't overwrite
-            default_container_list.insert(0, self.core_count)
+            default_container_list.insert(0, step)
         if default_container_list[-1] != max_num_containers:
             default_container_list.append(max_num_containers)
 
