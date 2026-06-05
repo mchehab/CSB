@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 set -e
-SCRIPT_DIR="$(readlink -f $(dirname "$0")/../bm-external)"
+SCRIPT_DIR="$(readlink -f $(dirname "$0")/../../bm-external)"
 
 TAG=1.0.20
 
