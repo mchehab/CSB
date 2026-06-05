@@ -2,8 +2,8 @@
 # Copyright (C) Huawei Technologies Co., Ltd. 2026. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-set -e
-SCRIPT_DIR="$(readlink -f $(dirname "$0")/../../bm-external)"
+set -ex
+SCRIPT_DIR="$(readlink -f $(dirname "$0")/../../../bm-external)"
 
 TAG=1.0.20
 
