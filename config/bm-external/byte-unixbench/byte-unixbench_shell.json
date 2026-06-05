@@ -1,0 +1,38 @@
+{
+  "plots": [
+    {
+      "x": "container_cnt",
+      "x_lbl": "#Containers",
+      "y": "throughput_lps",
+      "y_lbl": "Throughput(lps)",
+      "hue_lbl": "Executer",
+      "hue": "execution_unit",
+      "shape": "barplot",
+      "title": "Unixbench shell throughput (lps) vs. #container"
+    }
+  ],
+  "benchmark_config": {
+    "repeat": 6,
+    "threads": {
+      "values": [
+        [
+          1
+        ]
+      ]
+    }
+  },
+  "containers": {
+    "core_count": 2
+  },
+  "applications": [
+    {
+      "path": "bm-external/byte-unixbench/UnixBench",
+      "name": "Run",
+      "cd": true,
+      "args": "-c {threads} -i 1 -b -q shell",
+      "adapter": {
+        "name": "byte-unixbench-adapter.sh"
+      }
+    }
+  ]
+}
