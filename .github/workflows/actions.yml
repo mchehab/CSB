@@ -173,8 +173,8 @@ jobs:
     strategy:
       matrix:
         benchmark:
-          - { config: byte-unixbench_syscall, repo: https://github.com/kdlucas/byte-unixbench.git, build: ls }
-          - { config: will-it-scale, repo: https://github.com/antonblanchard/will-it-scale.git, build: make }
+          - { extern: unixbench, config: byte-unixbench_syscall }
+          - { extern: will-it-scale, config: will-it-scale }
     steps:
       - uses: actions/checkout@v4
         with:
@@ -187,14 +187,10 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get install -y build-essential cmake libhiredis-dev libhwloc-dev
-      - name: Clone benchmark
+      - name: Prepare benchmark
         run: |
-          mkdir -p bm-external
-          cd bm-external
-          git clone ${{ matrix.benchmark.repo }}
-          cd ${{ matrix.benchmark.config }}
-          ${{ matrix.benchmark.build }}
-      - name: Run Benchmark ${{ matrix.benchmark }}
+          ./scripts/bm-external/${{ matrix.benchmark.extern }}/configure.sh
+      - name: Run Benchmark ${{ matrix.benchmark.config }}
         run: |
           ./scripts/run-single.sh ${{ matrix.benchmark.config }}.json
       - name: Fix artifact permissions
