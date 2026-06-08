@@ -8,16 +8,14 @@ BUILD_DIR=${SRC_DIR}/bm_external
 
 echo $BUILD_DIR
 
-TAG=v6.0.1
-
 mkdir -p ${BUILD_DIR}
 (
 	cd ${BUILD_DIR}
-	if [ ! -e byte-unixbench/.git ]; then
-		git clone https://github.com/kdlucas/byte-unixbench --branch ${TAG}
+	if [ ! -e will-it-scale/.git ]; then
+		git clone https://github.com/antonblanchard/will-it-scale.git
 	else
-	    (cd byte-unixbench/UnixBench && make clean|| true)
+	    (cd will-it-scale && make clean|| true)
 	fi
-	cd byte-unixbench/UnixBench
+	cd will-it-scale
 	make
 )
