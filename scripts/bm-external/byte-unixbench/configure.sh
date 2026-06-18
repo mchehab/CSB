@@ -4,7 +4,7 @@
 
 set -ex
 SRC_DIR="$(readlink -f $(dirname "$0")/../../..)"
-BUILD_DIR=${SRC_DIR}/bm_external
+BUILD_DIR=${SRC_DIR}/bm-external
 
 echo $BUILD_DIR
 

@@ -173,8 +173,8 @@ jobs:
     strategy:
       matrix:
         benchmark:
-          - { extern: unixbench, config: byte-unixbench_syscall }
-          - { extern: will-it-scale, config: will-it-scale }
+          - { extern: byte-unixbench, dir: bm-external/byte-unixbench, config: byte-unixbench_syscall }
+          - { extern: will-it-scale, dir: bm-external/, config: will-it-scale }
     steps:
       - uses: actions/checkout@v4
         with:
@@ -192,7 +192,7 @@ jobs:
           ./scripts/bm-external/${{ matrix.benchmark.extern }}/configure.sh
       - name: Run Benchmark ${{ matrix.benchmark.config }}
         run: |
-          ./scripts/run-single.sh ${{ matrix.benchmark.config }}.json
+          ./scripts/run-single.sh config/${{ matrix.benchmark.dir }}/${{ matrix.benchmark.config }}.json
       - name: Fix artifact permissions
         if: always()
         run: sudo chmod -R a+r results/
