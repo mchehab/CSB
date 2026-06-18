@@ -166,9 +166,9 @@ class ContainersConfig(dict):
         # we remove zero from the list
         default_container_list.remove(0)
         # make sure first element of the list is one
-        if default_container_list[0] != step:
+        if default_container_list[0] != 1:
             # insert don't overwrite
-            default_container_list.insert(0, step)
+            default_container_list.insert(0, 1)
         if default_container_list[-1] != max_num_containers:
             default_container_list.append(max_num_containers)
 
