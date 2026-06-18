@@ -12,14 +12,7 @@
     }
   ],
   "benchmark_config": {
-    "repeat": 6,
-    "threads": {
-      "values": [
-        [
-          1
-        ]
-      ]
-    }
+    "repeat": 6
   },
   "containers": {
     "core_count": 2
