@@ -5,6 +5,14 @@ Each benchmark is a C header under (bench/targets). Each header is compiled with
 in a separate binary. These binaries represent an application/benchmark pool
 to be run by [bm-runner][].
 
+Manual targets normally live directly under `bench/targets/`. Generated
+syzkaller headers usually live under grouped target folders and/or
+`bench/targets/<group>/syz/`; headers under `syz/` are intermediate generated
+inputs and are excluded from direct compilation by `bench/CMakeLists.txt`.
+
+Generated or minimized targets can be expensive for the compiler to analyze.
+They may be compiled with `-fno-var-tracking` to keep build time reasonable.
+
 ## Compiling
 
 [bm-runner][] compiles and builds the builtin benchmarks automatically.

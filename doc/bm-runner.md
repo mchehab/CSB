@@ -55,6 +55,34 @@ Behind the scenes, the CSB framework will automate the following actions:
 - run the benchmarking workload;
 - plot the results.
 
+## Runner Contracts
+
+The runner parses the selected JSON configuration, builds a benchkit campaign,
+runs each campaign point, and writes result artifacts such as CSV and HTML
+outputs next to the run data.
+
+The execution-unit start barrier is the file `build/bench/start`. Execution
+units wait for this file before starting the benchmark workload.
+
+Benchmark and adapter output is parsed as semicolon-separated `key=value` pairs.
+The runner records one logical output line per execution unit and prefixes it
+with the execution-unit metadata:
+
+```text
+execution_unit=<name>;app=<app>;
+```
+
+Result data is expected to include the campaign dimensions `nb_threads`,
+`noise`, `initial_size`, `container_cnt`, and `execution_type`.
+
+Plugins can run at `pre`, `post`, `cleanup`, or `with`. During cleanup, preserve
+the established ordering between execution units, monitors, plugins, and the
+start barrier unless intentionally changing runner semantics.
+
+When adding or changing a config field, update the matching class under
+`bm-runner/config/`, the parsing/defaults, `doc/bm-config.md`, and tests under
+`bm-runner/tests/`.
+
 ## Configuring benchmarking workload.
 
 The unit of execution for CSB framework is a benchmark, which is configured with JSON files available in the `config/` directory.

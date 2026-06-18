@@ -53,7 +53,8 @@ Releases are tracked in [CHANGELOG](CHANGELOG.md).
 CSB is in its early stages. The current version is a prototype.
 If you encounter issues please report them in [CSB-issues](https://github.com/open-s4c/CSB/issues).
 You can also add feature requests. Once the architecture is stable we will publish
-a complete developer guide and accept PRs.
+a complete developer guide and accept PRs. Current development notes are tracked
+in [doc/development.md](doc/development.md).
 
 [benchkit]: https://github.com/open-s4c/benchkit
 [tmplr]: https://github.com/open-s4c/tmplr
