@@ -13,24 +13,12 @@ fi
 CONFIG="$(readlink -f $1)"
 shift
 
-TITLE=$(basename "$CONFIG" .json)
-
-## this script is to be embedded in other scripts
-HOSTNAME=$(hostname)
-export CSB_NO_BUILD_BENCH=ON
-
-BM_DIR=bm-runner
-
 info() {
     echo "[run.sh] $1"
 }
 
 ### Configure the env
 ${SCRIPT_DIR}/scripts/prepare.sh
-. ./venv/bin/activate
-
-### change dir to bm-runner
-cd ${BM_DIR}
 
 info "running $TITLE on $CONFIG"
 
@@ -39,7 +27,7 @@ info "Setting the open files limit to $FD_LIMIT"
 # set file limit to the max
 ulimit -n $FD_LIMIT
 
-python3 main.py --title "$TITLE" --config "$CONFIG" $*
+${SCRIPT_DIR}/scripts/bm-run main --config "$CONFIG" $*
 
 # cleanup benchkit file
 rm -f /tmp/benchkit.sh
