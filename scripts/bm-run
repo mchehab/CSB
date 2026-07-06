@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+# Copyright (C) Huawei Technologies Co., Ltd. 2026. All rights reserved.
+# SPDX-License-Identifier: MIT
+"""
+Run a bm-runner command, ensuring that virtualenv and needed env vars are
+set.
+"""
+
+import argparse
+import os
+import sys
+import subprocess
+
+SRC_DIR = os.path.realpath(os.path.dirname(__file__) + "/..")
+VENV_PATH = os.path.join(SRC_DIR, "venv")
+BM_RUNNER_DIR = os.path.join(SRC_DIR, "bm-runner")
+
+
+def set_env(env, key, value):
+    """Ancillary function to set a default value if not present on env"""
+    if key not in env:
+        env[key] = value
+
+
+def command_choices():
+    """Dynamically create a list of valid commands"""
+    commands = []
+    for f in os.listdir(BM_RUNNER_DIR):
+        fname = os.path.join(BM_RUNNER_DIR, f)
+        if f.endswith(".py") and os.path.isfile(fname) and os.access(fname, os.X_OK):
+            commands.append(f.removesuffix(".py"))
+
+    return commands
+
+
+def main():
+    """Main code"""
+    parser = argparse.ArgumentParser(
+        description="Run a bm command",
+        epilog="valid commands:" + ", ".join(command_choices()),
+        add_help=False,
+    )
+    parser.add_argument(
+        "command", nargs="?", choices=command_choices(), help="bm-runner command to run"
+    )
+
+    args, extra = parser.parse_known_args()
+    if not args.command:
+        commands = ", ".join(command_choices())
+        parser.print_help(sys.stderr)
+        print(f"\nNeed a command to run.\nValid commands: {commands}\n", file=sys.stderr)
+        sys.exit(1)
+
+    env = os.environ.copy()
+    if "VIRTUAL_ENV" not in env:
+        bin_dir = os.path.join(VENV_PATH, "bin")
+
+        if not os.path.isfile(os.path.join(bin_dir, "activate")):
+            sys.exit(f"Venv {VENV_PATH} not found.")
+
+        env["PATH"] = bin_dir + ":" + env["PATH"]
+        env["VIRTUAL_ENV"] = VENV_PATH
+        if "PYTHONHOME" in env:
+            del env["PYTHONHOME"]
+
+    # Set defaults for undeclared env CSB variables needed for bm-runner to work
+    set_env(env, "HOSTNAME", os.uname().nodename)
+    set_env(env, "CSB_NO_BUILD_BENCH", "ON")
+
+    cmd = ["python3", f"{BM_RUNNER_DIR}/{args.command}.py"] + extra
+    result = subprocess.run(cmd, check=False, env=env)
+
+    if result.returncode:
+        sys.exit(result.returncode)
+
+
+if __name__ == "__main__":
+    main()

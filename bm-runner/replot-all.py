@@ -11,6 +11,7 @@ import os
 import sys
 import subprocess
 
+from typing import Optional
 from glob import iglob
 
 SRC_DIR = os.path.realpath(os.path.dirname(__file__) + "/..")
@@ -18,7 +19,7 @@ VENV_PATH = os.path.join(SRC_DIR, "venv")
 BM_RUNNER_DIR = os.path.join(SRC_DIR, "bm-runner")
 
 
-def read_csv_header(filepath: str) -> str:
+def read_csv_header(filepath: str) -> Optional[str]:
     """
     Get campaign name from CSV file.
     """
@@ -56,24 +57,6 @@ def main():
     if not os.path.isdir(config_root):
         sys.exit(f"Config root {config_root} does not exist.")
 
-    # set env to run bm-runner inside a Python virtual environment
-    env = os.environ.copy()
-
-    bin_dir = os.path.join(VENV_PATH, "bin")
-
-    if not os.path.isfile(os.path.join(bin_dir, "activate")):
-        sys.exit(f"Venv {VENV_PATH} not found.")
-
-    env["PATH"] = bin_dir + ":" + env["PATH"]
-    env["VIRTUAL_ENV"] = VENV_PATH
-    if "PYTHONHOME" in env:
-        del env["PYTHONHOME"]
-
-    print(f"Using venv at {VENV_PATH}")
-
-    # Set required env variables for CSB to run
-    env["CSB_NO_BUILD_BENCH"] = "ON"
-
     # Get a list of CSV files
     csv = {}
     for d in args.csv_dirs:
@@ -109,7 +92,8 @@ def main():
             print(f"Replotting {csv_fname}")
             cmd = [
                 "python3",
-                "main.py",
+                f"{SRC_DIR}/scripts/bm-run",
+                "main",
                 "--title",
                 campaign,
                 "--config",
@@ -119,7 +103,7 @@ def main():
             ]
 
             print(" ".join(cmd))
-            subprocess.run(cmd, check=False, cwd=BM_RUNNER_DIR, env=env)
+            subprocess.run(cmd, check=False)
 
 
 if __name__ == "__main__":
