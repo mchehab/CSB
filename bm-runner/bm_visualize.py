@@ -114,7 +114,11 @@ def create_success_rate_plot(org_df, config: PlotConfig, dir):
     df = org_df.copy()
     # calculate success rate of operations
     df[succ_percent] = list(
-        map(lambda succ, total: (succ * 100) // total if total else 0, df[succ_col], df[count_col])
+        map(
+            lambda succ, total: (succ * 100) // total if total else 0,
+            df[succ_col],
+            df[count_col],
+        )
     )
     # overwrite
     config.y = succ_percent
@@ -141,6 +145,13 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
     max_col = None
     percentile = None
     metric = None
+
+    def min_max_errorbar(vals):
+        """
+        Don't use statistics for error bar, as the number of points on
+        graphs using this plut are not enough
+        """
+        return (vals.min(), vals.max())
 
     for c in df.columns:
         if c.startswith(prefix):
@@ -203,10 +214,12 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
         legend=legend,
         estimator="mean",
         # Mathplotlib doesn't really show max/min. Instead, it tries to
-        # filter out values too high/too or low. Its default is to use a
-        # standard distribution. Instead, use a more realistic error bar
-        # using percentile.
-        errorbar="pi",
+        # filter out values too high/too or low by using either standard
+        # deviation or percentile calculus. Thid requires multiple samples
+        # of max/min values, which we may no don't have.
+        # So, instead, just use max/min at the error bar without using any
+        # statistics.
+        errorbar=min_max_errorbar,
     )
 
     pc.save(out_fig_name=f"{dir}/{config.y}_min_avg_max")
@@ -448,4 +461,7 @@ def visualize_in_html(output_dir: Path, title: str, plots: list[PlotConfig]):
     doc.title = f"Results of: {hostname[0]}({title})"
     with open(output_file_name, "w") as f:
         f.write(doc.render())
-    bm_log(f"visualized results can be found in {output_file_name} with {title}", LogType.INFO)
+    bm_log(
+        f"visualized results can be found in {output_file_name} with {title}",
+        LogType.INFO,
+    )
