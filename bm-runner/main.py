@@ -77,7 +77,7 @@ if __name__ == "__main__":
         help="Rebuild plots instead of running the benchmark.",
         action="store_true",
     )
-    parser.add_argument("--title", help="The Benchmark title.", required=True)
+    parser.add_argument("--title", help="The Benchmark title.")
     parser.add_argument(
         "--config",
         help="Path to JSON config file of the benchmark.",
@@ -85,6 +85,9 @@ if __name__ == "__main__":
         required=True,
     )
     (args, dir_arg) = parser.parse_known_args()
+
+    if not args.title:
+        args.title = os.path.basename(args.config).removesuffix(".json")
 
     arg_continue = args.replot
     arg_title = args.title
