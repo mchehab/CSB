@@ -28,7 +28,13 @@ class PlotChart:
         # prep hue, we want to generate enough colors
         cnt = df[plot.hue].nunique()
         sorted_gp = sorted(df[plot.hue].unique())
-        palette = sns.color_palette(palette="hls", n_colors=cnt)
+
+        if "palette" in args:
+            palette = args["palette"]
+            del args["palette"]
+        else:
+            palette = sns.color_palette(palette="hls", n_colors=cnt)
+
         sns_plot_fun = getattr(sns, plot.shape)
 
         if (
@@ -80,7 +86,7 @@ class PlotChart:
             fontsize=4.5,
         )
 
-    def save(self, out_fig_name, gen_pdf: bool = False):
+    def save(self, out_fig_name, gen_pdf: bool = False) -> str:
 
         self.fig.set_size_inches(w=10, h=8)
         self.fig.tight_layout()
@@ -90,6 +96,8 @@ class PlotChart:
         if gen_pdf:
             self.fig.savefig(f"{figure_name}.pdf", transparent=False)
         plt.close()
+
+        return f"{figure_name}.png"
 
     @staticmethod
     def __col_exists(df: DataFrame, col: str, title: str) -> bool:
@@ -109,7 +117,7 @@ class PlotChart:
         add_points: bool = False,
         gen_pdf: bool = False,
         **kwargs,
-    ):
+    ) -> str:
         pc = PlotChart(plot)
         pc.add(plot, df, add_points=add_points, **kwargs)
-        pc.save(out_fig_name, gen_pdf)
+        return pc.save(out_fig_name, gen_pdf)
