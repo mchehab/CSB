@@ -89,6 +89,17 @@ if __name__ == "__main__":
     if not args.title:
         args.title = os.path.basename(args.config).removesuffix(".json")
 
+    # As CSB requires to be at bm-runner dir to run, ensure that all
+    # patches are converted into absolute path.
+    if args.config:
+        args.config = os.path.realpath(os.path.expanduser(args.config))
+    if dir_arg:
+        for i, d in enumerate(dir_arg):
+            dir_arg[i] = os.path.realpath(os.path.expanduser(d)).removesuffix(".csv")
+
+    # Ensure that bm-runner will use bm-runner/ directory
+    os.chdir(os.path.realpath(os.path.dirname(__file__)))
+
     arg_continue = args.replot
     arg_title = args.title
     arg_config = args.config
