@@ -142,6 +142,13 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str, **args) -> str
     percentile = None
     metric = None
 
+    def min_max_errorbar(vals):
+        """
+        Don't use statistics for error bar, as the number of points on
+        graphs using this plut are not enough
+        """
+        return (vals.min(), vals.max())
+
     for c in df.columns:
         if c.startswith(prefix):
             if c.endswith("avg"):
@@ -204,10 +211,13 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str, **args) -> str
         legend=legend,
         estimator="mean",
         # Mathplotlib doesn't really show max/min. Instead, it tries to
-        # filter out values too high/too or low. Its default is to use a
-        # standard distribution. Instead, use a more realistic error bar
-        # using percentile.
-        errorbar="pi",
+        # filter out values too high/too or low by using either standard
+        # deviation or percentile calculus. Thid requires multiple samples
+        # of max/min values, which we may no don't have.
+        # So, instead, just use max/min at the error bar without using any
+        # statistics.
+        errorbar=min_max_errorbar,
+        **args,
     )
 
     return pc.save(out_fig_name=f"{dir}/{config.y}_min_avg_max")
