@@ -214,9 +214,9 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
         legend=legend,
         estimator="mean",
         # Mathplotlib doesn't really show max/min. Instead, it tries to
-        # filter out values too high/too or low by using either standard
-        # deviation or percentile calculus. Thid requires multiple samples
-        # of max/min values, which we may no don't have.
+        # filter out too high or too low values by using either standard
+        # deviation or percentile calculus. This requires multiple samples
+        # of max/min values, which we may not have.
         # So, instead, just use max/min at the error bar without using any
         # statistics.
         errorbar=min_max_errorbar,
