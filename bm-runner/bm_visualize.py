@@ -149,7 +149,7 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
     def min_max_errorbar(vals):
         """
         Don't use statistics for error bar, as the number of points on
-        graphs using this plut are not enough
+        graphs using this plot are not enough
         """
         return (vals.min(), vals.max())
 
