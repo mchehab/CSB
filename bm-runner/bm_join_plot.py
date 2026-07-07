@@ -11,8 +11,9 @@ The output file names now follow the pattern:
     <app_name>-<execution_type>-<NNN>.png
 where NNN is a zero‑padded counter per (app, exec_type) pair.
 
-Example:
-    python gen_graph.py ./results/ --config-root ./config/
+For example, if one wants to compare results on two directories
+named node10 and node60:
+    bm-runner/bm_join_plot.py node10 node60
 
 The first version o this tool was LLM-generated on Ollama on a 16GB DRNA4
 VRAM GPU using queries on: gpt-oss, gemma4, nemotron-cascade-2, qwen3.5,
