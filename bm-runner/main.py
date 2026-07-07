@@ -86,9 +86,6 @@ if __name__ == "__main__":
     )
     (args, dir_arg) = parser.parse_known_args()
 
-    if not args.title:
-        args.title = os.path.basename(args.config).removesuffix(".json")
-
     arg_continue = args.replot
     arg_title = args.title if args.title else os.path.basename(args.config).removesuffix(".json")
     arg_config = args.config
