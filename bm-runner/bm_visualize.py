@@ -4,6 +4,7 @@
 import os
 import datetime
 import glob
+from typing import Optional
 from dominate import document
 from dominate.tags import style, table, tr, td, div, img, h1, h2, a, iframe
 import pandas as pd
@@ -106,7 +107,9 @@ def add_info_tbl(df, doc: document, result_file: str):
 
 
 ###########################################################################
-def create_success_rate_plot(org_df, config: PlotConfig, dir):
+def create_success_rate_plot(
+    org_df, config: PlotConfig, dir, palette: Optional[list] = None
+) -> str:
     prefix = config.y
     count_col = f"{prefix}_count"
     succ_col = f"{prefix}_succ_count"
@@ -122,11 +125,15 @@ def create_success_rate_plot(org_df, config: PlotConfig, dir):
     )
     # overwrite
     config.y = succ_percent
-    PlotChart.plot(plot=config, df=df, out_fig_name=f"{dir}/{prefix}_succ_percent")
+    return PlotChart.plot(
+        plot=config, df=df, out_fig_name=f"{dir}/{prefix}_succ_percent", palette=palette
+    )
 
 
 ###########################################################################
-def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
+def create_min_max_avg_plot(
+    org_df, config: PlotConfig, dir: str, palette: Optional[list] = None
+) -> str:
     """
     Treats `config.y` as a prefix and look for min, max, and avg values
     It assumes such columns exist in the dataframe <config.y>min,
@@ -167,7 +174,7 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
                 max_col = c
 
     if not min_col or not max_col:
-        return
+        return ""
 
     # If both percentile and average are present, use percentile, as it
     # provides an expected value for the metric on most cases.
@@ -185,6 +192,7 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
             tmp_config,
             df[[config.x, config.hue, metric]],
             estimator="mean",
+            palette=palette,
         )
 
         # Mathplotlib will always calculate its own average line, calculated
@@ -222,7 +230,7 @@ def create_min_max_avg_plot(org_df, config: PlotConfig, dir: str):
         errorbar=min_max_errorbar,
     )
 
-    pc.save(out_fig_name=f"{dir}/{config.y}_min_avg_max")
+    return pc.save(out_fig_name=f"{dir}/{config.y}_min_avg_max")
 
 
 ###########################################################
@@ -269,7 +277,7 @@ def implicit_add_columns(trans_df, subdf, histo, x_col, gp_name):
 
 
 ###########################################################
-def create_histogram_plot(df, plot: PlotConfig, dir):
+def create_histogram_plot(df, plot: PlotConfig, dir, palette: Optional[list] = None) -> str:
     col_prefix = plot.y
     histo = f"{col_prefix}_histogram"
     subdf = df[[plot.x, plot.hue, histo]].copy()
@@ -291,31 +299,39 @@ def create_histogram_plot(df, plot: PlotConfig, dir):
     implicit_add_columns(trans_df, subdf, histo, plot.x, plot.hue)
     ############################################################
     plot.y = "latency"  # TODO configure
-    PlotChart.plot(plot=plot, df=trans_df, out_fig_name=f"{dir}/{histo}_boxplot")
+    return PlotChart.plot(
+        plot=plot, df=trans_df, out_fig_name=f"{dir}/{histo}_boxplot", palette=palette
+    )
+
+
+###########################################################################
+def create_plot(df, plot: PlotConfig, dir, info: str, palette: Optional[list] = None) -> str:
+    match plot.type:
+        case PlotType.NORMAL:
+            fig_name = f"{dir}/{plot.x}_vs_{plot.y}_{info}"
+            return PlotChart.plot(plot=plot, df=df, out_fig_name=fig_name, palette=palette)
+        case PlotType.MIN_MAX_AVG:
+            return create_min_max_avg_plot(org_df=df, config=plot, dir=dir, palette=palette)
+        case PlotType.SUCCESS_PERCENT:
+            return create_success_rate_plot(org_df=df, config=plot, dir=dir, palette=palette)
+        case PlotType.HISTOGRAM:
+            return create_histogram_plot(df=df, plot=plot, dir=dir, palette=palette)
+        case PlotType.LINEARITY:
+            return create_linearity_plot(df=df, plot=plot, dir=dir, palette=palette)
+        case PlotType.MEAN:
+            return create_mean_plot(df=df, plot=plot, dir=dir, palette=palette)
+        case PlotType.BPFTRACE_HIST:
+            return BpfTrace.dump_hist_data_heat_map(df=df, plot=plot, output_dir=dir)
+        case _:
+            bm_log(f"unsupported plot type: {plot.type} skipped!", LogType.WARNING)
+            return None
 
 
 ###########################################################################
 def create_plots(df, plots: list[PlotConfig], dir, info: str):
     for plot in plots:
         try:
-            match plot.type:
-                case PlotType.NORMAL:
-                    fig_name = f"{dir}/{plot.x}_vs_{plot.y}_{info}"
-                    PlotChart.plot(plot=plot, df=df, out_fig_name=fig_name)
-                case PlotType.MIN_MAX_AVG:
-                    create_min_max_avg_plot(org_df=df, config=plot, dir=dir)
-                case PlotType.SUCCESS_PERCENT:
-                    create_success_rate_plot(org_df=df, config=plot, dir=dir)
-                case PlotType.HISTOGRAM:
-                    create_histogram_plot(df=df, plot=plot, dir=dir)
-                case PlotType.LINEARITY:
-                    create_linearity_plot(df=df, plot=plot, dir=dir)
-                case PlotType.MEAN:
-                    create_mean_plot(df=df, plot=plot, dir=dir)
-                case PlotType.BPFTRACE_HIST:
-                    BpfTrace.dump_hist_data_heat_map(df=df, plot=plot, output_dir=dir)
-                case _:
-                    bm_log(f"unsupported plot type: {plot.type} skipped!", LogType.WARNING)
+            create_plot(df, plot, dir, info)
         except Exception as e:
             bm_log(
                 f"Failed to generate plot {plot.title}. The following error occurred {e}.",
@@ -363,17 +379,18 @@ def split_data_frame(df: DataFrame) -> dict:
     return frames
 
 
-def create_mean_plot(df: DataFrame, plot: PlotConfig, dir):
-    PlotChart.plot(
+def create_mean_plot(df: DataFrame, plot: PlotConfig, dir, palette: Optional[list] = None):
+    return PlotChart.plot(
         plot=plot,
         df=df,
         out_fig_name=f"{dir}/{plot.y}_mean",
         add_points=True,
         estimator="mean",
+        palette=palette,
     )
 
 
-def create_linearity_plot(df: DataFrame, plot: PlotConfig, dir):
+def create_linearity_plot(df: DataFrame, plot: PlotConfig, dir, palette: Optional[list] = None):
     count_col: str = plot.x  # e.g. container count
     subject_col: str = plot.y  # e.g. throughput
     group_col: str = plot.hue  # e.g. execution env native/container
@@ -413,7 +430,7 @@ def create_linearity_plot(df: DataFrame, plot: PlotConfig, dir):
 
     plot.y = "linearity"
     plot.y_lbl = "Linearity"
-    PlotChart.plot(plot=plot, df=lin_df, out_fig_name=f"{dir}/linearity")
+    return PlotChart.plot(plot=plot, df=lin_df, out_fig_name=f"{dir}/linearity", palette=palette)
 
 
 ###########################################################################

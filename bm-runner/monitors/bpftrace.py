@@ -369,7 +369,7 @@ class BpfTrace(Monitor):
         return df_long, bucket_cols
 
     @staticmethod
-    def dump_hist_data_heat_map(df: pd.DataFrame, plot: PlotConfig, output_dir: str):
+    def dump_hist_data_heat_map(df: pd.DataFrame, plot: PlotConfig, output_dir: str) -> str:
         x_col = plot.x  # container_cnt
         hue_col = plot.hue  # execution_type
         hist_col = plot.y  # bpftrace histogram column
@@ -380,7 +380,7 @@ class BpfTrace(Monitor):
 
         if df_long.empty:
             bm_log(f"Cannot plot {plot.title}. Dataframe is empty!", LogType.WARNING)
-            return
+            return ""
 
         hues = df[hue_col].unique()
 
@@ -422,8 +422,9 @@ class BpfTrace(Monitor):
                 ylabel="Buckets",
             )
 
+        figure_name = f"{output_dir}/{plot.title}_{time.perf_counter()}"
         fig.tight_layout()
-        fig.savefig(
-            f"{output_dir}/{plot.title}_{time.perf_counter()}.png", dpi=300, bbox_inches="tight"
-        )
+        fig.savefig(f"{figure_name}.png", dpi=300, bbox_inches="tight")
         plt.close(fig)
+
+        return figure_name
