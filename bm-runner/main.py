@@ -90,7 +90,7 @@ if __name__ == "__main__":
         args.title = os.path.basename(args.config).removesuffix(".json")
 
     arg_continue = args.replot
-    arg_title = args.title
+    arg_title = args.title if args.title else os.path.basename(args.config).removesuffix(".json")
     arg_config = args.config
 
     # Parse configuration file
