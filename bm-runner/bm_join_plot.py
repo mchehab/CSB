@@ -284,12 +284,14 @@ def main() -> None:
     parser.add_argument("csv_dirs", nargs="+", help="Directories that contain CSV files.")
     parser.add_argument("-d", "--debug", action="store_true", help="Enable debug.")
     parser.add_argument(
-        "--config-root", default="config", help="Root directory with JSON config files."
+        "--config-root",
+        default="config",
+        help="Root directory with JSON config files (default: %(default)s).",
     )
     parser.add_argument(
         "--output-dir",
         default="plots",
-        help="Directory where PNGs and index.html will be written.",
+        help="Directory where PNGs and index.html will be written (default: %(default)s).",
     )
     args = parser.parse_args()
 
