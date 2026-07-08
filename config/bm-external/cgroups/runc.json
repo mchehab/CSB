@@ -18,7 +18,7 @@
       "hue": "execution_unit",
       "hue_lbl": "Executor",
       "shape": "barplot",
-      "title": "youki create time"
+      "title": "runc create time"
     },
     {
       "x": "container_cnt",
@@ -28,7 +28,7 @@
       "hue": "execution_unit",
       "hue_lbl": "Executor",
       "shape": "barplot",
-      "title": "youki delete time"
+      "title": "runc delete time"
     },
     {
       "x": "container_cnt",
@@ -137,9 +137,9 @@
     }
   ],
   "benchmark_config": {
-    "exec_env": [
-      "native"
-    ],
+    "exec_env": {
+      "native": []
+    },
     "monitors": {
       "mpstat": [
         "-n",
@@ -186,7 +186,7 @@
     {
       "path": "bm-external/cgroups",
       "name": "bm-cgroups.py",
-      "args": "--index {index} --units {n_units} --iterations 100 --runtime youki --root ./bm-external/cgroups/"
+      "args": "--index {index} --units {n_units} --iterations 100 --runtime runc --root ./bm-external/cgroups/"
     }
   ],
   "plugins": [

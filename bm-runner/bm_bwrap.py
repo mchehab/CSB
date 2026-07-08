@@ -4,15 +4,15 @@
 import os
 import sys
 
-from bm_executer import Executer, ExecutionUnit
+from bm_exec_unit import ExecutionUnit
 from bm_utils import resolve_path
 from config.application import Application
 from config.benchmark import ExecutionType
-from config.container import ContainersConfig
 from utils.logger import bm_log, LogType
 from pathlib import Path
 from utils.process import BackgroundProcess
 from bm_utils import ensure_exists
+import bm_config
 
 
 class Bubblewrap(ExecutionUnit):
@@ -66,6 +66,9 @@ class Bubblewrap(ExecutionUnit):
             if os.path.exists(Path(src)):
                 args.extend(["--ro-bind", src, dst])
 
+        assert bm_config.g_config, "Unexpected error, configuration object is not set!"
+        cfg = bm_config.g_config.get_benchmark_cfg()
+        args.extend(cfg.get_exec_env_args(ExecutionType.BWRAP))
         return args
 
     def exec(self, command: str) -> bool:
@@ -103,27 +106,3 @@ class Bubblewrap(ExecutionUnit):
     def stop(self):
         if self.process is not None:
             self.process.force_stop()
-
-
-class Bubblewraps(Executer):
-    def __init__(
-        self,
-        config: ContainersConfig,
-        apps: list[Application],
-        home_dir,
-        count,
-        record_data_dir,
-    ):
-        super().__init__(home_dir=home_dir, results_dir=record_data_dir)
-        assert len(apps) == count, "[BUG] Application list length must be equal to count"
-
-        for i in range(count):
-            core_set = config.get_cpus(i)
-            bwrap = Bubblewrap(
-                idx=i,
-                home_dir=home_dir,
-                core_set=core_set,
-                record_data_dir=record_data_dir,
-                app=apps[i],
-            )
-            self.add_exec_unit(bwrap)

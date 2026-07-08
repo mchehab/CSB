@@ -65,7 +65,10 @@ class BenchmarkConfig(dict):
         repeat: int = 1,
         initial_size: list[int] = [0],
         noise: list[int] = [0],
-        exec_env: list[ExecutionType] = [ExecutionType.NATIVE, ExecutionType.CONTAINER],
+        exec_env: dict[ExecutionType, list[str]] = {
+            ExecutionType.NATIVE: [],
+            ExecutionType.CONTAINER: [],
+        },
         monitors: dict[MonitorType, list[str]] = {},
         threads: Optional[ListConfig] = None,
     ):
@@ -89,9 +92,11 @@ class BenchmarkConfig(dict):
             How many `nop` operations to run between real
             operations.
             JSON example: `"noise" : [0, 1000]`
-        exec_env: list[ExecutionType] = ["native", "container"]
-            Whether to execute the benchmark in a container or
-            natively. JSON example: `"exec_env" : ["container", "native"]`
+        exec_env: dict[ExecutionType, list[str]] = {"native":[], "container":[]}
+            Dictates in which environments the benchmark is executed, and which
+            extra arguments are used. Note that currently the arguments are
+            only considered in case of `bwrap`.
+            JSON example: `"exec_env" : {"native":[], "container":[], "bwrap":["--die-with-parent"]}`
         monitors: dict[MonitorType, list[str]]
             Monitors to run in the background.
         threads: ListConfig = {"values": [[1]]}
@@ -110,3 +115,6 @@ class BenchmarkConfig(dict):
             if threads is not None
             else ListConfig([[1]]).get_list()
         )
+
+    def get_exec_env_args(self, exec_type: ExecutionType) -> list[str]:
+        return self.exec_env.get(exec_type, [])
