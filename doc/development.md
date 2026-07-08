@@ -72,7 +72,7 @@ scripts/run-single.sh config/bm_empty.json
 Replot existing results:
 
 ```bash
-helpers/replot-all.py
+scripts/bm-run replot-all
 ```
 
 alternatively

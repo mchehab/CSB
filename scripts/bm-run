@@ -62,6 +62,10 @@ def main():
         env["VIRTUAL_ENV"] = VENV_PATH
         if "PYTHONHOME" in env:
             del env["PYTHONHOME"]
+    else:
+        venv_dir = env["VIRTUAL_ENV"]
+        if os.path.realpath(venv_dir) != os.path.realpath(VENV_PATH):
+            print(f"Warning: using VENV from {venv_dir} instead of {VENV_PATH}")
 
     # Set defaults for undeclared env CSB variables needed for bm-runner to work
     set_env(env, "HOSTNAME", os.uname().nodename)
