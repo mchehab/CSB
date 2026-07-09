@@ -222,8 +222,8 @@ def generate_html(
 
         plots = []
 
-        for _, base_type in apps.items():
-            for _, types in base_type.items():
+        for app, base_type in apps.items():
+            for title, types in base_type.items():
                 others = []
                 table_cols = {}
 
@@ -241,6 +241,9 @@ def generate_html(
 
                 for pos, col in enumerate(cols):
                     for rel_path in table_cols.get(col, []):
+                        if cur_plots[pos]:
+                            bm_log(f"Multiple values for {machine}/{app}/{title}/{etype} found!")
+
                         cur_plots[pos] = os.path.join(out_dir, rel_path)
 
                 # Just in case, output other columns, if any
