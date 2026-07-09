@@ -242,7 +242,10 @@ def generate_html(
                 for pos, col in enumerate(cols):
                     for rel_path in table_cols.get(col, []):
                         if cur_plots[pos]:
-                            bm_log(f"Multiple values for {machine}/{app}/{title}/{etype} found!")
+                            bm_log(
+                                f"Multiple values for {machine}/{app}/{title}/{etype} found!",
+                                LogType.WARNING,
+                            )
                             cur_plots.append(os.path.join(out_dir, rel_path))
                         else:
                             cur_plots[pos] = os.path.join(out_dir, rel_path)
