@@ -33,6 +33,7 @@ import sys
 from glob import iglob
 from typing import Dict, List, Optional
 
+from bm_config import construct_bm_name
 from bm_utils import read_data_frame_from_csv
 from bm_visualize import create_plot
 from visual.report import Report
@@ -200,7 +201,7 @@ def read_config(config_root: str) -> Dict[str, List[dict]]:
                 print(f"Failed to load {json_path}: {e}")
                 continue
 
-            app = os.path.basename(f).replace(".json", "")
+            app = construct_bm_name(json_path)
             plots_by_app[app] = data.get("plots")
 
     return plots_by_app

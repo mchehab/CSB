@@ -10,7 +10,7 @@ from benchmark import ScalabilityBenchmark
 from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 from typing import Iterable, Optional, Dict, Any
 import bm_config
-from bm_config import CampaignConfig
+from bm_config import CampaignConfig, construct_bm_name
 from config.benchmark import ExecutionType
 import traceback
 from bm_utils import remove_files_by_ext
@@ -65,25 +65,6 @@ def csbCampaign(
     )
 
 
-def construct_bm_name(config_file: Path):
-    """
-    Constructs the benchmark name based on the given
-    configuration file name.
-    """
-    # return parts without ext
-    parts = list(config_file.with_suffix("").parts)
-    # remove everything before and including config
-    if "config" in parts:
-        parts = parts[parts.index("config") + 1 :]
-        # if external is in the path remove it as well
-        if parts and parts[0] == "bm-external":
-            parts = parts[1:]
-        # now join with `_`
-        return "_".join(parts)
-    else:
-        return config_file.stem
-
-
 ###########################################################################
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Container Scalability Benchmark")
@@ -126,7 +107,7 @@ if __name__ == "__main__":
         traceback.print_exc()
         sys.exit(1)
 
-    benchmark_name = construct_bm_name(Path(arg_config))
+    benchmark_name = construct_bm_name(arg_config)
 
     # Campaign Parameters
     assert bm_config.g_config is not None
