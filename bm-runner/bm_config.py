@@ -6,7 +6,6 @@ import sys
 import logging
 from typing import Optional
 from json import JSONDecodeError
-from pathlib import Path
 from config.plugin import Plugin
 from config.plot import PlotConfig
 from config.container import ContainersConfig
@@ -16,27 +15,6 @@ import shutil
 from config.nics import NicsConfig
 from utils.logger import bm_log, LogType
 from bm_utils import get_host_ip
-
-
-def construct_bm_name(fname: str):
-    """
-    Constructs the benchmark name based on the given
-    configuration file name.
-    """
-    config_file = Path(fname)
-
-    # return parts without ext
-    parts = list(config_file.with_suffix("").parts)
-    # remove everything before and including config
-    if "config" in parts:
-        parts = parts[parts.index("config") + 1 :]
-        # if external is in the path remove it as well
-        if parts and parts[0] == "bm-external":
-            parts = parts[1:]
-        # now join with `_`
-        return "_".join(parts)
-    else:
-        return config_file.stem
 
 
 class CampaignConfig:

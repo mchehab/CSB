@@ -10,14 +10,14 @@ from benchmark import ScalabilityBenchmark
 from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 from typing import Iterable, Optional, Dict, Any
 import bm_config
-from bm_config import CampaignConfig, construct_bm_name
+from bm_config import CampaignConfig
 from config.benchmark import ExecutionType
 import traceback
 from bm_utils import remove_files_by_ext
 from utils.logger import bm_log, LogType
 from config.env_config import EnvUniversalConfig, UniversalConfig
 from utils.bm_builder import Builder
-from bm_utils import is_process_running, kill_all
+from bm_utils import is_process_running, kill_all, construct_bm_name
 import os
 
 

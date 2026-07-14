@@ -33,8 +33,7 @@ import sys
 from glob import iglob
 from typing import Dict, List, Optional
 
-from bm_config import construct_bm_name
-from bm_utils import read_data_frame_from_csv
+from bm_utils import read_data_frame_from_csv, construct_bm_name
 from bm_visualize import create_plot
 from visual.report import Report
 from config.plot import PlotConfig

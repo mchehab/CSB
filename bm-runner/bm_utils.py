@@ -44,6 +44,27 @@ def check_data_directory(output_dir):
     return True
 
 
+def construct_bm_name(fname: str):
+    """
+    Constructs the benchmark name based on the given
+    configuration file name.
+    """
+    config_file = Path(fname)
+
+    # return parts without ext
+    parts = list(config_file.with_suffix("").parts)
+    # remove everything before and including config
+    if "config" in parts:
+        parts = parts[parts.index("config") + 1 :]
+        # if external is in the path remove it as well
+        if parts and parts[0] == "bm-external":
+            parts = parts[1:]
+        # now join with `_`
+        return "_".join(parts)
+    else:
+        return config_file.stem
+
+
 # saves all system configurations that
 # might influence the performance of the benchmark
 def save_sys_config(output_dir):
