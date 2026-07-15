@@ -363,11 +363,11 @@ def main() -> None:
                     plot_def["palette"] = global_palette
 
                     # As we're using kernel as hue, lineplot works better
-                    if plot_def["shape"] == "barplot":
+                    if plot_def.get("shape") == "barplot":
                         plot_def["shape"] = "lineplot"
 
                     # Ensure that the type will do what we need
-                    if "type" not in plot_def or plot_def["type"] == "normal":
+                    if plot_def.get("type", "normal") == "normal":
                         plot_def["type"] = "mean"
 
                     plot = PlotConfig(**plot_def)
