@@ -28,8 +28,8 @@ DEFAULT_TABLE_SIZE = 10000
 DEFAULT_BENCH_TIME = 1
 DEFAULT_MYSQL_CMD = "mariadb"
 
-DEFAULT_SYSBENCH_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "bm-external", "sysbench"
+DEFAULT_SYSBENCH_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "bm-external", "sysbench")
 )
 DEFAULT_LUA_FILE = os.path.join(DEFAULT_SYSBENCH_DIR, "share", "sysbench", "oltp_read_write.lua")
 
