@@ -319,7 +319,7 @@ def main() -> None:
     # Filter by app using pandas boolean indexing (exactly as requested)
     structured_plots: Dict[str, Dict[str, Dict[str, Dict[str, List[str]]]]] = {}
 
-    for machine in df["machine"].dropna().unique():
+    for machine_num, machine in enumerate(df["machine"].dropna().unique()):
         structured_plots[machine] = {}
 
         filter_machine = df["machine"] == machine
@@ -372,6 +372,7 @@ def main() -> None:
 
                     plot = PlotConfig(**plot_def)
                     plot.title = f"{host}: {title} ({etype_name})"
+                    plot.fname = f"{plot.fname}_{machine_num}_{etype_name}"
 
                     if title not in structured_plots[machine][app]:
                         structured_plots[machine][app][title] = {}
