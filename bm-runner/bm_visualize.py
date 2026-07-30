@@ -27,7 +27,6 @@ def add_info_tbl(df, report: Report, result_file: str):
     table = []
     table.append(["Results file name:", result_file])
     for info in info_points:
-        row = []
         value = df[info].unique()
         if len(value) == 1:
             table.append([info, value[0]])
