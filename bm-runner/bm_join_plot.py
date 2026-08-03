@@ -213,7 +213,10 @@ def generate_html(
     """Generate a clean, indented HTML gallery and write it to out_dir/index.html"""
     cols = ["NATIVE", "CONTAINER"]
 
-    report = Report(title="Benchmark Comparison", css_style=CSS_STYLE, add_title_date=False)
+    html_path = os.path.join(out_dir, "index.html")
+    report = Report(
+        title="Benchmark Comparison", css_style=CSS_STYLE, add_title_date=False, fname=html_path
+    )
 
     for machine, apps in structured_plots.items():
         s = f" on {machine}" if machine else ""
@@ -261,8 +264,7 @@ def generate_html(
 
         report.add_line("")
 
-    html_path = os.path.join(out_dir, "index.html")
-    report.save(html_path)
+    report.save()
 
     print(f"\nHTML with plots written to: {html_path}")
     return html_path
